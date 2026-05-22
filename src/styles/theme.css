@@ -1,0 +1,45 @@
+/* theme.css */
+:root {
+  /* Golden Light Theme */
+  --bg: hsl(45, 30%, 95%);
+  --bg1: hsl(45, 30%, 90%);
+  --bg2: hsl(45, 30%, 85%);
+  --b1: hsl(45, 10%, 80%);
+  --b2: hsl(45, 10%, 70%);
+  --t1: hsl(45, 30%, 20%);
+  --t2: hsl(45, 30%, 35%);
+  --t3: hsl(45, 10%, 55%);
+  --gold: hsl(45, 70%, 55%);
+  --gold-light: hsla(45, 70%, 55%, 0.2);
+  --cyan: hsl(180, 70%, 50%);
+  --purple: hsl(260, 70%, 55%);
+  --green: hsl(140, 70%, 45%);
+  --pink: hsl(330, 70%, 55%);
+  --ff-display: 'Outfit', sans-serif;
+  --ff-mono: 'JetBrains Mono', monospace;
+}
+
+[data-theme="dark"] {
+  --bg: hsl(45, 15%, 12%);
+  --bg1: hsl(45, 15%, 15%);
+  --bg2: hsl(45, 15%, 18%);
+  --b1: hsl(45, 10%, 25%);
+  --b2: hsl(45, 10%, 35%);
+  --t1: hsl(45, 20%, 90%);
+  --t2: hsl(45, 15%, 80%);
+  --t3: hsl(45, 10%, 65%);
+  --gold: hsl(45, 70%, 65%);
+  --gold-light: hsla(45, 70%, 65%, 0.2);
+  --cyan: hsl(180, 70%, 60%);
+  --purple: hsl(260, 70%, 65%);
+  --green: hsl(140, 70%, 55%);
+  --pink: hsl(330, 70%, 65%);
+}
+
+/* Glassmorphism utility */
+.glass {
+  backdrop-filter: blur(12px) saturate(180%);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+}

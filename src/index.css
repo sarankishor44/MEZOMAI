@@ -1,0 +1,151 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.15s ease, box-shadow 0.25s ease;
+}
+
+/* ── LUXURY GOLD LIGHT THEME ── */
+:root,
+:root[data-theme='light'] {
+  --bg: #fcfaf2;           /* Soft warm cream background */
+  --bg1: #f5eedc;          /* Muted panel background */
+  --bg2: #ebdcb9;          /* Elevated card background */
+  --bg3: #dec793;          /* Hover/Active element background */
+  --b1: #dec793;           /* Muted border */
+  --b2: #aa843c;           /* Golden accent border */
+  --gold: #b3862b;         /* Rich metallic gold primary */
+  --gold-glow: rgba(179, 134, 43, 0.15);
+  --gold-light: rgba(179, 134, 43, 0.08);
+  --green: #2e7d32;
+  --amber: #e65100;
+  --red: #c62828;
+  --purple: #6a1b9a;
+  --pink: #ad1457;
+  --cyan: #00838f;
+  --t1: #2a1f08;           /* Very dark warm brown/charcoal text */
+  --t2: #6b5118;           /* Muted gold text */
+  --t3: #9b7e3e;           /* Muted brown/gray text */
+  --ff-display: 'Syne', sans-serif;
+  --ff-body: 'Outfit', sans-serif;
+  --ff-mono: 'JetBrains Mono', monospace;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --ff: var(--ff-display);
+  --fm: var(--ff-mono);
+  --fb: var(--ff-body);
+  --r: var(--radius);
+  --r2: var(--radius-lg);
+  --cyang: var(--gold-light);
+  --cyangs: var(--gold-glow);
+}
+
+/* ── PREMIUM OBSIDIAN GOLD DARK THEME ── */
+:root[data-theme='dark'] {
+  --bg: #0c0a06;           /* Deep dark obsidian gold */
+  --bg1: #151109;          /* Dark panel background */
+  --bg2: #211b0e;          /* Elevated dark card */
+  --bg3: #322815;          /* Hover/Active dark element */
+  --b1: #382d17;           /* Muted dark border */
+  --b2: #d4af37;           /* Bright metallic gold accent border */
+  --gold: #d4af37;         /* Radiant metallic gold primary */
+  --gold-glow: rgba(212, 175, 55, 0.35);
+  --gold-light: rgba(212, 175, 55, 0.1);
+  --green: #00e676;
+  --amber: #ffb300;
+  --red: #ff4757;
+  --purple: #c084fc;
+  --pink: #f472b6;
+  --cyan: #00d4ff;
+  --t1: #fdfaf2;           /* Near-white cream text */
+  --t2: #d4c5a9;           /* Soft gold text */
+  --t3: #8a7c62;           /* Muted dark gold text */
+}
+
+html, body, #root {
+  height: 100vh;
+  overflow: hidden;
+  font-family: var(--ff-body);
+  background-color: var(--bg);
+  color: var(--t1);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg1);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--b1);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gold);
+}
+
+/* Inputs and Forms */
+input, textarea, select {
+  font-family: var(--ff-body);
+  background-color: var(--bg1);
+  border: 1px solid var(--b1);
+  border-radius: var(--radius);
+  color: var(--t1);
+  padding: 10px 14px;
+  outline: none;
+  font-size: 13px;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 10px var(--gold-glow);
+}
+
+button {
+  cursor: pointer;
+  font-family: var(--ff-body);
+  border-radius: var(--radius);
+  transition: all 0.2s ease;
+}
+button:active {
+  transform: scale(0.98);
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--b1);
+}
+
+/* Dynamic glow animations */
+@keyframes goldPulse {
+  0%, 100% {
+    box-shadow: 0 0 15px var(--gold-glow);
+  }
+  50% {
+    box-shadow: 0 0 25px var(--gold-glow), 0 0 5px var(--gold);
+  }
+}
+
+.gold-glow-btn {
+  background: linear-gradient(135deg, var(--gold), #aa843c);
+  color: var(--bg);
+  font-weight: 700;
+  box-shadow: 0 0 15px var(--gold-glow);
+  border: none;
+}
+.gold-glow-btn:hover {
+  box-shadow: 0 0 25px var(--gold-glow);
+  transform: translateY(-1px);
+}
+
+/* Page entrance transitions */
+.fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}

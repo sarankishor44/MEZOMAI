@@ -1,6 +1,14 @@
 # 🤖 AI Character Platform
 
+ HEAD
 A full **real-time AI character platform** — animated avatar, live chat, code IDE, video meetings, and analytics. Bring your own API keys, everything else is **free**.
+
+> A full real-time AI character platform — animated avatar, live chat, code IDE, video meetings, and analytics. Bring your own API keys, everything else is free.
+
+![AI Character Platform](https://pollinations.ai/p/futuristic%20dark%20AI%20character%20platform%20dashboard%20with%20animated%20avatar?width=1200&height=400&nologo=true)
+
+---
+8362782 (your message)
 
 ## ✨ Features
 
@@ -16,6 +24,7 @@ A full **real-time AI character platform** — animated avatar, live chat, code 
 
 ---
 
+<<<<<<< HEAD
 ## 🧩 Full Components — Every Piece of the Project
 
 ## 📊 Big Picture — All Layers
@@ -736,10 +745,14 @@ User clicks Run → React Terminal
 ---
 
 ## 🔑 API Keys Required
+=======
+## 🔑 API Keys Required (Bring Your Own)
+>>>>>>> 8362782 (your message)
 
 You need **3 API keys**. All have generous free tiers — no credit card needed to start.
 
 ### 1. 🧠 Anthropic (Claude) — AI Brain
+<<<<<<< HEAD
 - Get it: [platform.anthropic.com](https://platform.anthropic.com/)
 - Format: `sk-ant-api03-...`
 - Free tier: $5 credit on signup
@@ -756,6 +769,24 @@ You need **3 API keys**. All have generous free tiers — no credit card needed 
 - Format: `abc123xyz...`
 - Free tier: 10,000 minutes/month
 - Powers: real WebRTC video room, avatar appears as video participant
+=======
+- **Get it:** [platform.anthropic.com](https://platform.anthropic.com)
+- **Format:** `sk-ant-api03-...`
+- **Free tier:** $5 credit on signup
+- **Powers:** All chat, code help, meeting conversation, emotion detection, meeting notes
+
+### 2. 🗣️ ElevenLabs — Real Voice Output
+- **Get it:** [elevenlabs.io](https://elevenlabs.io)
+- **Format:** `sk_...`
+- **Free tier:** 10,000 characters/month
+- **Powers:** Character speaks with a real human-quality voice
+
+### 3. 🎥 Daily.co — Video Rooms
+- **Get it:** [daily.co/developers](https://daily.co/developers)
+- **Format:** `abc123xyz...`
+- **Free tier:** 10,000 minutes/month
+- **Powers:** Real WebRTC video room, avatar appears as video participant
+>>>>>>> 8362782 (your message)
 
 ---
 
@@ -763,6 +794,7 @@ You need **3 API keys**. All have generous free tiers — no credit card needed 
 
 | Feature | Technology | Cost |
 |---|---|---|
+<<<<<<< HEAD
 | 🎤 Voice input (STT) | Web Speech API (browser native) | $0 |
 | 😊 Avatar face | SVG animated, built-in | $0 |
 | 🖼️ Avatar image gen | Pollinations.ai (no key needed) | $0 |
@@ -772,6 +804,17 @@ You need **3 API keys**. All have generous free tiers — no credit card needed 
 | 📝 Meeting notes | Claude generates them | $0 |
 | 📊 Analytics | Tracked locally | $0 |
 | 🌐 Hosting | Vercel / GitHub Pages | $0 |
+=======
+| 🎤 Voice input (STT) | Web Speech API (browser native) | **$0** |
+| 😊 Avatar face | SVG animated, built-in | **$0** |
+| 🖼️ Avatar image gen | Pollinations.ai (no key needed) | **$0** |
+| 💾 Chat memory | localStorage (browser native) | **$0** |
+| 🐍 Run Python | Pyodide (browser WASM) | **$0** |
+| ⚡ Run JavaScript | eval() sandbox | **$0** |
+| 📝 Meeting notes | Claude generates them | **$0** |
+| 📊 Analytics | Tracked locally | **$0** |
+| 🌐 Hosting | Vercel / GitHub Pages | **$0** |
+>>>>>>> 8362782 (your message)
 
 ---
 
@@ -789,7 +832,11 @@ npm install
 ```
 
 ### 3. Add your API keys
+<<<<<<< HEAD
 Go to **Settings** page in the app and paste your keys. They are stored only in your browser's `localStorage` — never sent to any server.
+=======
+Go to **Settings** page in the app and paste your keys. They are stored only in your browser's localStorage — never sent to any server.
+>>>>>>> 8362782 (your message)
 
 Or create a `.env` file (optional, for pre-loading keys):
 ```env
@@ -804,15 +851,171 @@ npm run dev
 ```
 
 ### 5. Open in browser
+<<<<<<< HEAD
 ```text
+=======
+```
+>>>>>>> 8362782 (your message)
 http://localhost:5173
+```
+
+---
+
+<<<<<<< HEAD
+## 🎨 Design System
+
+### Colors
+=======
+## 📁 Project Structure
+
+```
+ai-character-platform/
+├── src/
+│   ├── App.jsx                    # Root, global state, page router
+│   ├── index.css                  # Global styles, CSS variables
+│   │
+│   ├── state/
+│   │   ├── useAppStore.js         # Global state (Zustand)
+│   │   ├── useSettings.js         # API keys, model, voice config
+│   │   ├── useSession.js          # Session tracking, analytics
+│   │   └── useMemory.js           # Chat memory via localStorage
+│   │
+│   ├── hooks/
+│   │   ├── useClaudeChat.js       # Anthropic API streaming
+│   │   ├── useElevenLabs.js       # TTS voice output
+│   │   ├── useSpeechRecognition.js# Web Speech API (free STT)
+│   │   ├── useDaily.js            # Daily.co room management
+│   │   ├── useAvatarState.js      # Avatar emotion/state machine
+│   │   ├── useCodeRunner.js       # JS eval + Pyodide runner
+│   │   └── useMeetingDetect.js    # Detect Zoom/Meet/Teams from URL
+│   │
+│   ├── api/
+│   │   ├── claude.js              # Claude API calls + streaming
+│   │   ├── elevenlabs.js          # ElevenLabs TTS
+│   │   ├── daily.js               # Daily.co room create/join
+│   │   └── pollinations.js        # Free avatar image generation
+│   │
+│   ├── components/
+│   │   ├── layout/                # Sidebar, nav, shell
+│   │   ├── avatar/                # SVG face, lip-sync, glow, canvas
+│   │   ├── dashboard/             # Quick join bar, stats, skills, feed
+│   │   ├── chat/                  # Messages, mic, voice, personality
+│   │   ├── code/                  # Editor, file tree, terminal, AI assist
+│   │   ├── meetings/              # Video grid, transcript, controls
+│   │   ├── analytics/             # Charts, usage, history
+│   │   └── settings/              # API keys, model, voice, avatar
+│   │
+│   └── utils/
+│       ├── detectMeetingPlatform.js
+│       ├── tokenCounter.js
+│       ├── streamResponse.js
+│       ├── audioVisualizer.js
+│       └── syntaxColors.js
+│
+├── public/
+├── .env.example
+├── package.json
+└── README.md
+```
+
+---
+
+## 📄 Pages
+
+### 🏠 Dashboard
+- Large animated avatar (breathing, blinking, emotion states)
+- ⚡ **Quick Join Bar** — paste any meeting link for instant bot setup
+- Stats: total sessions, messages sent, tokens used, voice minutes
+- Skill cards showing all agent capabilities
+- Recent activity feed
+- Quick action buttons
+
+### 💬 Chat
+- Real-time streaming responses from Claude
+- Hold mic button → speak → avatar listens → responds with voice
+- ElevenLabs voice output (natural, human-quality)
+- Avatar lip-syncs and shows emotion based on conversation
+- Personality modes: Friendly / Developer / Coach / Professional
+- Image upload → Claude vision analysis
+- Full conversation memory (persisted across sessions)
+
+### 💻 Code IDE
+- File tree with create/rename/delete
+- Multi-file tabs
+- Syntax-highlighted code editor with line numbers
+- AI Assist panel — ask the character to write, fix, explain, refactor
+- Diff view — see exactly what the AI changed
+- Terminal panel — JS runs instantly, Python via Pyodide (WASM)
+- Avatar reacts to errors and successes
+
+### 🎥 Meetings
+- Paste a Zoom, Google Meet, Teams, or any link → platform auto-detected
+- Configure: bot name, personality, voice, system prompt
+- Daily.co room created → avatar appears as a real video participant
+- Others join via shareable link — no app required
+- Live transcript panel
+- In-call task execution ("search that for me", "summarize this")
+- Post-call: Claude generates meeting notes + action items
+- Download notes as text file
+
+### 📊 Analytics
+- Sessions over time chart
+- Token usage per conversation
+- Estimated API cost tracker
+- ElevenLabs character quota bar
+- Daily.co minutes used
+- Meeting history table with duration and notes
+
+### 🔑 Settings
+- Anthropic API key + test connection button
+- ElevenLabs API key + voice selector + test button
+- Daily.co API key + test button
+- Claude model selector (claude-sonnet, claude-haiku, etc.)
+- Avatar name and personality system prompt
+- Avatar image (generate via Pollinations or upload custom)
+- All data stored in localStorage only — never leaves your browser
+
+---
+
+## 🔄 How It Works
+
+### Chat Flow
+```
+User speaks (mic)
+    ↓
+Web Speech API → transcript (free)
+    ↓
+Claude API → streaming response (your Anthropic key)
+    ↓
+ElevenLabs → audio output (your ElevenLabs key)
+    ↓
+Audio waveform → lip-sync → avatar mouth animates
+```
+
+### Meeting Flow
+```
+Paste meeting link → platform detected
+    ↓
+Bot configured (name, voice, personality)
+    ↓
+Daily.co room created (your Daily.co key)
+    ↓
+Avatar canvas → captureStream() → video track
+    ↓
+Published to room as video participant
+    ↓
+Others join via link → see AI avatar in video grid
+    ↓
+Web Speech → Claude → ElevenLabs loop (real-time)
+    ↓
+Call ends → Claude generates meeting notes
 ```
 
 ---
 
 ## 🎨 Design System
 
-### Colors
+>>>>>>> 8362782 (your message)
 ```css
 --bg-primary:    #080810   /* deep dark background */
 --bg-secondary:  #0f0f1a   /* sidebar, cards */
@@ -824,6 +1027,7 @@ http://localhost:5173
 --accent-blue:   #60a5fa   /* listening state */
 --text-primary:  #f0f0ff   /* main text */
 --text-secondary:#8888aa   /* muted text */
+<<<<<<< HEAD
 ```
 
 ### Fonts
@@ -838,6 +1042,19 @@ http://localhost:5173
 | 🔵 **Listening** | Blue `#60a5fa` | Eyes wide, alert |
 | 🟣 **Thinking** | Purple `#a78bfa` | Eyes half-closed, glow pulses |
 | 🟢 **Talking** | Green `#34d399` | Mouth animates, lip-sync |
+=======
+--font-display:  'Bebas Neue'      /* headings */
+--font-mono:     'JetBrains Mono'  /* code, UI labels */
+```
+
+### Avatar States
+| State | Glow Color | Behavior |
+|---|---|---|
+| 🟣 Idle | Pink `#f472b6` | Breathing, slow blink |
+| 🔵 Listening | Blue `#60a5fa` | Eyes wide, alert |
+| 🟣 Thinking | Purple `#a78bfa` | Eyes half-closed, glow pulses |
+| 🟢 Talking | Green `#34d399` | Mouth animates, lip-sync |
+>>>>>>> 8362782 (your message)
 
 ---
 
@@ -845,13 +1062,21 @@ http://localhost:5173
 
 Add new capabilities by creating a skill module:
 
+<<<<<<< HEAD
 ```javascript
+=======
+```js
+>>>>>>> 8362782 (your message)
 // src/skills/mySkill.js
 export default {
   name: 'my-skill',
   description: 'What this skill does',
   trigger: ['keywords', 'that', 'activate', 'it'],
   async execute(input, context) {
+<<<<<<< HEAD
+=======
+    // your logic here
+>>>>>>> 8362782 (your message)
     return { result: '...' }
   }
 }
@@ -908,12 +1133,17 @@ docker run -p 3000:3000 ai-character-platform
 
 ## 📄 License
 
+<<<<<<< HEAD
 **MIT License** — free to use, modify, and distribute.
+=======
+MIT License — free to use, modify, and distribute.
+>>>>>>> 8362782 (your message)
 
 ---
 
 ## 🙏 Acknowledgements
 
+<<<<<<< HEAD
 - [Anthropic](https://anthropic.com/) — Claude AI
 - [ElevenLabs](https://elevenlabs.io/) — Voice synthesis
 - [Daily.co](https://daily.co/) — WebRTC video rooms
@@ -925,3 +1155,18 @@ docker run -p 3000:3000 ai-character-platform
 
 <p align="center">Built with ❤️ — AI Character Platform</p>"# MEZOMAI" 
 "# MEZOMAI" 
+=======
+- [Anthropic](https://anthropic.com) — Claude AI
+- [ElevenLabs](https://elevenlabs.io) — Voice synthesis
+- [Daily.co](https://daily.co) — WebRTC video rooms
+- [Pollinations.ai](https://pollinations.ai) — Free image generation
+- [Pyodide](https://pyodide.org) — Python in the browser
+- [Recharts](https://recharts.org) — Charts
+
+---
+
+<p align="center">Built with ❤️ — AI Character Platform</p>
+#   v i r t u a l a p i A I 
+ 
+ 
+>>>>>>> 8362782 (your message)
