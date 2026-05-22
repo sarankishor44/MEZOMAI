@@ -19,7 +19,10 @@ class AuthController extends Controller
             'exp' => time() + (24 * 60 * 60 * 7) // 7 days expiration
         ];
         
-        $secret = env('JWT_SECRET', 'aria_jwt_super_secret_key_change_in_prod');
+        $secret = env('JWT_SECRET');
+        if (!$secret) {
+            abort(500, 'JWT secret is not configured');
+        }
         return JWT::encode($payload, $secret, 'HS256');
     }
 

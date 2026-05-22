@@ -36,8 +36,8 @@ services:
     volumes:
       - ./backend-php:/var/www/html
     environment:
-      - APP_ENV=local
-      - APP_DEBUG=true
+      - APP_ENV=${APP_ENV:-production}
+      - APP_DEBUG=${APP_DEBUG:-false}
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_DATABASE=aria_platform
@@ -45,7 +45,7 @@ services:
       - DB_PASSWORD=aria_secret
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - JWT_SECRET=aria_jwt_super_secret_key_change_in_prod
+      - JWT_SECRET=${JWT_SECRET}
       - ENCRYPTION_KEY=aria_aes256_key_change_in_prod_32ch
     depends_on:
       mysql:
@@ -74,7 +74,9 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - PHP_API_URL=http://php/api
-      - JWT_SECRET=aria_jwt_super_secret_key_change_in_prod
+      - JWT_SECRET=${JWT_SECRET}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      - APP_ENV=${APP_ENV:-production}
     depends_on:
       mysql:
         condition: service_healthy

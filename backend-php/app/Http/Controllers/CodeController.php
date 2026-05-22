@@ -125,9 +125,14 @@ class CodeController extends Controller
 
         $fileId = null;
         if ($request->file_uuid) {
-            $file = DB::table('code_files')->where('uuid', $request->file_uuid)->first();
+            $file = DB::table('code_files')
+                ->where('uuid', $request->file_uuid)
+                ->where('user_id', $user->id)
+                ->first();
             if ($file) {
                 $fileId = $file->id;
+            } else {
+                return response()->json(['error' => 'File not found'], 404);
             }
         }
 
@@ -171,7 +176,7 @@ class CodeController extends Controller
             $durationMs = (int) ((microtime(true) - $startTime) * 1000);
             return response()->json([
                 'stdout' => '',
-                'stderr' => 'Failed to reach execution sandbox backend: ' . $e->getMessage(),
+                'stderr' => 'Failed to reach execution sandbox backend.',
                 'exit_code' => -1,
                 'duration_ms' => $durationMs
             ], 502);

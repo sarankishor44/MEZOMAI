@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useStore } from './store'
 import Sidebar from './components/layout/Sidebar'
 import DashboardPage from './pages/DashboardPage'
@@ -7,11 +7,11 @@ import CodePage from './pages/CodePage'
 import MeetingsPage from './pages/MeetingsPage'
 import AnalyticsPage from './pages/AnalyticsPage'
 import SettingsPage from './pages/SettingsPage'
-import DeploymentChecklistPage from './pages/DeploymentChecklistPage'
 import LoginPage from './pages/LoginPage'
 
 export default function App() {
   const { page, token, theme } = useStore()
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   // Apply theme class to document root for CSS variables
   useEffect(() => {
@@ -25,14 +25,13 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: 'var(--bg)' }}>
-      <Sidebar />
+      <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(v => !v)} />
       <main style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
         {page === 'dashboard'  && <DashboardPage />}
         {page === 'chat'       && <ChatPage />}
         {page === 'code'       && <CodePage />}
         {page === 'meetings'   && <MeetingsPage />}
         {page === 'analytics'  && <AnalyticsPage />}
-        {page === 'deployment' && <DeploymentChecklistPage />}
         {page === 'settings'   && <SettingsPage />}
       </main>
     </div>

@@ -34,6 +34,7 @@ class MeetingController extends Controller
         // Check if meeting with this room_id already exists and is active
         $existing = DB::table('meetings')
             ->where('room_id', $request->room_id)
+            ->where('user_id', $user->id)
             ->where('status', 'active')
             ->first();
 

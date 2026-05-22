@@ -51,7 +51,7 @@ async def run_code(req: CodeRunRequest):
     except Exception as e:
         return {
             "stdout": "",
-            "stderr": f"System Error executing code: {str(e)}",
+            "stderr": "System Error executing code.",
             "exit_code": -1
         }
     finally:
