@@ -924,3 +924,4 @@ docker run -p 3000:3000 ai-character-platform
 ---
 
 <p align="center">Built with ❤️ — AI Character Platform</p>"# MEZOMAI" 
+"# MEZOMAI" 
