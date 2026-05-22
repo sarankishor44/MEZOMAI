@@ -7,6 +7,7 @@ import CodePage from './pages/CodePage'
 import MeetingsPage from './pages/MeetingsPage'
 import AnalyticsPage from './pages/AnalyticsPage'
 import SettingsPage from './pages/SettingsPage'
+import DeploymentChecklistPage from './pages/DeploymentChecklistPage'
 import LoginPage from './pages/LoginPage'
 
 export default function App() {
@@ -31,6 +32,7 @@ export default function App() {
         {page === 'code'       && <CodePage />}
         {page === 'meetings'   && <MeetingsPage />}
         {page === 'analytics'  && <AnalyticsPage />}
+        {page === 'deployment' && <DeploymentChecklistPage />}
         {page === 'settings'   && <SettingsPage />}
       </main>
     </div>
