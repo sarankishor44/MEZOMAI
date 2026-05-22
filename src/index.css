@@ -2,7 +2,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.15s ease, box-shadow 0.25s ease;
+  transition: background-color 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.3s ease, color 0.2s ease, box-shadow 0.3s ease;
 }
 
 /* ── LUXURY GOLD LIGHT THEME ── */
@@ -40,40 +40,90 @@
   --cyangs: var(--gold-glow);
 }
 
-/* ── PREMIUM OBSIDIAN GOLD DARK THEME ── */
+/* ── REVOLUTIONARY OBSIDIAN COSMIC CYBERNETIC DARK THEME ── */
 :root[data-theme='dark'] {
-  --bg: #0c0a06;           /* Deep dark obsidian gold */
-  --bg1: #151109;          /* Dark panel background */
-  --bg2: #211b0e;          /* Elevated dark card */
-  --bg3: #322815;          /* Hover/Active dark element */
-  --b1: #382d17;           /* Muted dark border */
-  --b2: #d4af37;           /* Bright metallic gold accent border */
-  --gold: #d4af37;         /* Radiant metallic gold primary */
-  --gold-glow: rgba(212, 175, 55, 0.35);
-  --gold-light: rgba(212, 175, 55, 0.1);
-  --green: #00e676;
-  --amber: #ffb300;
-  --red: #ff4757;
-  --purple: #c084fc;
-  --pink: #f472b6;
-  --cyan: #00d4ff;
-  --t1: #fdfaf2;           /* Near-white cream text */
-  --t2: #d4c5a9;           /* Soft gold text */
-  --t3: #8a7c62;           /* Muted dark gold text */
+  --bg: #050402;           /* Deepest Cosmic Obsidian black */
+  --bg1: rgba(11, 9, 5, 0.85); /* Highly translucent dark obsidian glass */
+  --bg2: rgba(22, 18, 10, 0.65); /* Floating card glassmorphism */
+  --bg3: rgba(45, 36, 20, 0.9);   /* Cyber-active elements */
+  --b1: rgba(212, 175, 55, 0.16); /* Neon-gold grid lines */
+  --b2: #d4af37;           /* Metallic gold trim */
+  --gold: #e5c158;         /* Radiant electric gold primary */
+  --gold-glow: rgba(229, 193, 88, 0.45);
+  --gold-light: rgba(229, 193, 88, 0.12);
+  --green: #00ffaa;        /* Cyber green */
+  --amber: #ffbb00;
+  --red: #ff3366;          /* Neon hot pink/red */
+  --purple: #d47aff;       /* Sci-fi neural purple */
+  --pink: #ff66cc;
+  --cyan: #00f3ff;         /* Electric cyber-cyan */
+  --t1: #faf7f2;           /* Cream text */
+  --t2: #ebd8b0;           /* Soft cyber-gold text */
+  --t3: #8a7c62;           /* Muted tactical text */
+  --cyang: rgba(0, 243, 255, 0.08); /* Secondary cyan highlights */
+  --cyangs: rgba(0, 243, 255, 0.35);
+}
+
+/* ── COSMIC NEBULA & CYBER GRID ENGINE ── */
+body {
+  position: relative;
+  background-color: var(--bg);
+}
+
+body::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: 
+    radial-gradient(circle at 20% 25%, rgba(212, 175, 55, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 80% 75%, rgba(0, 243, 255, 0.1) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(212, 122, 255, 0.05) 0%, transparent 50%),
+    linear-gradient(135deg, #050402, #0d0a06);
+  background-size: 200% 200%;
+  animation: cosmicNebula 20s ease infinite;
+  pointer-events: none;
+}
+
+body::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: 
+    linear-gradient(rgba(212, 175, 55, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212, 175, 55, 0.02) 1px, transparent 1px);
+  background-size: 50px 50px;
+  background-position: center;
+  mask-image: radial-gradient(circle at 50% 50%, black 30%, transparent 95%);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, black 30%, transparent 95%);
+  pointer-events: none;
+  opacity: 0.95;
+}
+
+/* Hide animations in light theme */
+[data-theme='light'] body::before,
+[data-theme='light'] body::after {
+  display: none !important;
+}
+
+@keyframes cosmicNebula {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 html, body, #root {
   height: 100vh;
   overflow: hidden;
   font-family: var(--ff-body);
-  background-color: var(--bg);
   color: var(--t1);
 }
 
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: var(--bg1);
@@ -84,6 +134,7 @@ html, body, #root {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--gold);
+  box-shadow: 0 0 8px var(--gold-glow);
 }
 
 /* Inputs and Forms */
@@ -96,27 +147,62 @@ input, textarea, select {
   padding: 10px 14px;
   outline: none;
   font-size: 13px;
+  backdrop-filter: blur(8px);
 }
 input:focus, textarea:focus, select:focus {
   border-color: var(--gold);
-  box-shadow: 0 0 10px var(--gold-glow);
+  box-shadow: 0 0 12px var(--gold-glow), inset 0 0 8px rgba(229, 193, 88, 0.05);
 }
 
 button {
   cursor: pointer;
   font-family: var(--ff-body);
   border-radius: var(--radius);
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 button:active {
-  transform: scale(0.98);
+  transform: scale(0.96);
 }
 
-/* Glassmorphism utility */
-.glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(10px);
+/* Premium Sci-fi Glassmorphism Panel */
+.glass, .cyber-panel {
+  background: var(--bg2);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid var(--b1);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Corner highlights on cards for sci-fi look */
+.cyber-panel::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 12px; height: 12px;
+  border-top: 2px solid var(--gold);
+  border-left: 2px solid var(--gold);
+  border-top-left-radius: 4px;
+  pointer-events: none;
+  opacity: 0.85;
+}
+.cyber-panel::after {
+  content: "";
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 12px; height: 12px;
+  border-bottom: 2px solid var(--cyan);
+  border-right: 2px solid var(--cyan);
+  border-bottom-right-radius: 4px;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+[data-theme='light'] .cyber-panel::before,
+[data-theme='light'] .cyber-panel::after {
+  display: none !important;
 }
 
 /* Dynamic glow animations */
@@ -125,27 +211,67 @@ button:active {
     box-shadow: 0 0 15px var(--gold-glow);
   }
   50% {
-    box-shadow: 0 0 25px var(--gold-glow), 0 0 5px var(--gold);
+    box-shadow: 0 0 28px var(--gold-glow), 0 0 8px var(--gold);
   }
 }
 
+/* Shifting holographic light button */
 .gold-glow-btn {
   background: linear-gradient(135deg, var(--gold), #aa843c);
-  color: var(--bg);
-  font-weight: 700;
+  color: #1a1405;
+  font-weight: 800;
   box-shadow: 0 0 15px var(--gold-glow);
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+.gold-glow-btn::after {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.25), transparent);
+  transform: rotate(30deg);
+  transition: transform 0.8s ease;
+  pointer-events: none;
 }
 .gold-glow-btn:hover {
-  box-shadow: 0 0 25px var(--gold-glow);
-  transform: translateY(-1px);
+  box-shadow: 0 0 25px var(--gold-glow), 0 0 10px rgba(0, 243, 255, 0.2);
+  transform: translateY(-2px);
+}
+.gold-glow-btn:hover::after {
+  transform: translate(100%, 100%) rotate(30deg);
+}
+
+/* Cybernetic light effects for lists & details */
+.glow-card-hover:hover {
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 18px rgba(229, 193, 88, 0.15) !important;
+  transform: translateY(-2px);
 }
 
 /* Page entrance transitions */
 .fade-in {
-  animation: fadeIn 0.4s ease forwards;
+  animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(12px); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+/* Hologram scanline effect */
+.scanlines {
+  position: relative;
+  overflow: hidden;
+}
+.scanlines::before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.12) 50%);
+  background-size: 100% 4px;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.4;
 }

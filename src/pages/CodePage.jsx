@@ -172,7 +172,7 @@ export default function CodePage() {
               <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                 <span style={{ color: 'var(--t3)' }}>1: // Refactored code structure</span>{'\n'}
                 <span style={{ color: 'var(--red)', background: 'rgba(255,71,87,0.1)' }}>- def greet(name):{'\n'}-     print(f"Hello, " + name)</span>{'\n'}
-                <span style={{ color: 'var(--green)', background: 'rgba(0,230,118,0.1)' }}>+ def greet(name: str) -> None:{'\n'}+     print(f"Hello, {name}! Ready to code.")</span>
+                <span style={{ color: 'var(--green)', background: 'rgba(0,230,118,0.1)' }}>{"+ def greet(name: str) -> None:"}{'\n'}{"+     print(f\"Hello, {name}! Ready to code.\")"}</span>
               </div>
             </div>
           ) : (
