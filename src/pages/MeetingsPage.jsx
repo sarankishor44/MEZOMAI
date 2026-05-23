@@ -49,6 +49,7 @@ export default function MeetingsPage() {
   const transcriptEndRef = useRef(null)
 
   const platform = useMemo(() => detectPlatform(roomInput || activeRoom), [roomInput, activeRoom])
+  const meetingHistory = Array.isArray(recentMeetings) ? recentMeetings : []
 
   const formatTime = (secs) => {
     const h = Math.floor(secs / 3600).toString().padStart(2, '0')
@@ -262,8 +263,8 @@ export default function MeetingsPage() {
           <section style={panel}>
             <SectionTitle title="Recent meetings" sub="Local meeting history from this browser."/>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {recentMeetings.length === 0 && <div style={emptyBox}>No recent meetings yet.</div>}
-              {recentMeetings.slice(0, 6).map(m => (
+              {meetingHistory.length === 0 && <div style={emptyBox}>No recent meetings yet.</div>}
+              {meetingHistory.slice(0, 6).map(m => (
                 <div key={m.id} style={recentRow}>
                   <div>
                     <div style={{ fontWeight: 800 }}>{m.roomName}</div>
