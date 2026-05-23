@@ -23,6 +23,7 @@ Route::middleware('auth.jwt')->group(function () {
     Route::get('/chat/sessions', [ChatController::class, 'getSessions']);
     Route::post('/chat/sessions', [ChatController::class, 'createSession']);
     Route::get('/chat/sessions/{uuid}/messages', [ChatController::class, 'getMessages']);
+    Route::post('/chat/sessions/{uuid}/message', [ChatController::class, 'sendMessage']);
     
     Route::get('/code/files', [CodeController::class, 'getFiles']);
     Route::post('/code/files', [CodeController::class, 'createFile']);
@@ -36,5 +37,6 @@ Route::middleware('auth.jwt')->group(function () {
     Route::post('/meetings/{uuid}/notes', [MeetingController::class, 'saveNotes']);
     
     Route::get('/analytics', [AnalyticsController::class, 'getStats']);
+    Route::get('/settings', [SettingsController::class, 'getSettings']);
     Route::post('/settings', [SettingsController::class, 'saveSettings']);
 });

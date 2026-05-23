@@ -59,8 +59,14 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'avatar_name' => $user->avatar_name,
                 'avatar_style' => $user->avatar_style,
+                'avatar_gender' => $user->avatar_gender ?? 'female',
                 'personality' => $user->personality,
-                'model' => $user->model
+                'model' => $user->model,
+                'system_prompt' => $user->system_prompt,
+                'voice_name' => $user->voice_name,
+                'voice_speed' => $user->voice_speed,
+                'voice_pitch' => $user->voice_pitch,
+                'active_provider' => $user->active_provider ?? 'anthropic'
             ]
         ], 201);
     }
@@ -87,8 +93,14 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'avatar_name' => $user->avatar_name,
                 'avatar_style' => $user->avatar_style,
+                'avatar_gender' => $user->avatar_gender ?? 'female',
                 'personality' => $user->personality,
-                'model' => $user->model
+                'model' => $user->model,
+                'system_prompt' => $user->system_prompt,
+                'voice_name' => $user->voice_name,
+                'voice_speed' => $user->voice_speed,
+                'voice_pitch' => $user->voice_pitch,
+                'active_provider' => $user->active_provider ?? 'anthropic'
             ]
         ]);
     }
@@ -103,8 +115,14 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'avatar_name' => $user->avatar_name,
                 'avatar_style' => $user->avatar_style,
+                'avatar_gender' => $user->avatar_gender ?? 'female',
                 'personality' => $user->personality,
-                'model' => $user->model
+                'model' => $user->model,
+                'system_prompt' => $user->system_prompt,
+                'voice_name' => $user->voice_name,
+                'voice_speed' => $user->voice_speed,
+                'voice_pitch' => $user->voice_pitch,
+                'active_provider' => $user->active_provider ?? 'anthropic'
             ]
         ]);
     }

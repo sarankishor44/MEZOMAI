@@ -3,7 +3,7 @@ import { useStore } from '../store'
 import { phpApi } from '../utils/api'
 
 export default function LoginPage() {
-  const { setToken, setUser, theme, toggleTheme } = useStore()
+  const { setToken, setUser, updateSettings, theme, toggleTheme } = useStore()
   const [mode, setMode] = useState('login')
   const [form, setForm] = useState({ username: '', email: '', password: '' })
   const [loading, setLoading] = useState(false)
@@ -19,8 +19,15 @@ export default function LoginPage() {
       const { data } = await phpApi.post(endpoint, form)
       setToken(data.token)
       setUser(data.user)
+      updateSettings(userToSettings(data.user))
     } catch (e) {
-      console.warn('REST authentication failed. Falling back to demo mode.', e)
+      const demoAllowed = import.meta.env.VITE_DEMO_MODE === 'true' || import.meta.env.DEV
+      if (!demoAllowed) {
+        setError(e.response?.data?.error || 'Login failed. Check backend and credentials.')
+        setLoading(false)
+        return
+      }
+      console.warn('REST authentication failed. Demo mode is enabled locally.', e)
       setDemoNotice(true)
       setTimeout(() => {
         const mockUser = {
@@ -33,6 +40,7 @@ export default function LoginPage() {
         }
         setToken('demo_session_token_xyz')
         setUser(mockUser)
+        updateSettings(userToSettings(mockUser))
         setLoading(false)
       }, 700)
     }
@@ -81,18 +89,33 @@ export default function LoginPage() {
         </div>
 
         {error && <div style={{ marginTop: 12, fontSize: 12, color: 'var(--red)', fontFamily: 'var(--ff-mono)' }}>{error}</div>}
-        {demoNotice && <div style={noticeStyle}>Backend unavailable. Opening the local demo workspace.</div>}
+        {demoNotice && <div style={noticeStyle}>Backend unavailable. Opening local demo workspace because demo mode is enabled.</div>}
 
         <button onClick={submit} disabled={loading} className="gold-glow-btn" style={submitBtn}>
           {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
         </button>
 
         <p style={helpText}>
-          Use any demo email and password to explore the client features instantly.
+          Demo fallback works only when `VITE_DEMO_MODE=true` or during local development.
         </p>
       </section>
     </div>
   )
+}
+
+function userToSettings(user = {}) {
+  return {
+    avatarName: user.avatar_name || user.avatarName || 'ARIA',
+    avatarStyle: user.avatar_style || user.avatarStyle || 'gold',
+    avatarGender: user.avatar_gender || user.avatarGender || 'female',
+    personality: user.personality || 'friendly',
+    model: user.model || 'claude-3-5-sonnet-20241022',
+    systemPrompt: user.system_prompt || user.systemPrompt || undefined,
+    voiceName: user.voice_name || user.voiceName || 'Rachel',
+    voiceSpeed: Number(user.voice_speed || user.voiceSpeed || 1),
+    voicePitch: Number(user.voice_pitch || user.voicePitch || 1),
+    activeProvider: user.active_provider || user.activeProvider || 'anthropic',
+  }
 }
 
 const pageWrap = {

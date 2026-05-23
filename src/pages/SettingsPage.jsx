@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
+import { phpApi } from '../utils/api'
 
 const API_FIELDS = [
   { key: 'apiKey', provider: 'Anthropic', placeholder: 'sk-ant-api03-...', models: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'] },
@@ -22,7 +23,51 @@ export default function SettingsPage() {
   const [visible, setVisible] = useState({})
   const [testResult, setTestResult] = useState(null)
   const [testing, setTesting] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [dbStatus, setDbStatus] = useState('Local settings')
   const voices = typeof speechSynthesis !== 'undefined' ? speechSynthesis.getVoices() : []
+
+  React.useEffect(() => {
+    loadSettings()
+  }, [])
+
+  const loadSettings = async () => {
+    try {
+      const { data } = await phpApi.get('/settings')
+      updateSettings(data.settings)
+      setDbStatus('Loaded from DB')
+    } catch {
+      setDbStatus('Local settings')
+    }
+  }
+
+  const saveSettings = async () => {
+    setSaving(true)
+    try {
+      await phpApi.post('/settings', {
+        avatar_name: settings.avatarName,
+        avatar_style: settings.avatarStyle,
+        avatar_gender: settings.avatarGender,
+        personality: settings.personality,
+        system_prompt: settings.systemPrompt,
+        voice_name: settings.voiceName,
+        voice_speed: settings.voiceSpeed,
+        voice_pitch: settings.voicePitch,
+        model: settings.model,
+        activeProvider: settings.activeProvider,
+        apiKey: settings.apiKey,
+        openAiKey: settings.openAiKey,
+        geminiKey: settings.geminiKey,
+        elevenLabsKey: settings.elevenLabsKey,
+        dailyKey: settings.dailyKey,
+      })
+      setDbStatus('Saved to DB')
+    } catch (e) {
+      setDbStatus(e.response?.data?.message || 'DB save failed')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const testProvider = async (field) => {
     setTesting(field)
@@ -63,8 +108,12 @@ export default function SettingsPage() {
         <div>
           <div style={eyebrow}>Workspace setup</div>
           <h1 style={title}>Settings</h1>
+          <div style={hint}>{dbStatus}</div>
         </div>
-        <button onClick={logout} style={dangerBtn}>Sign Out</button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={saveSettings} disabled={saving} className="gold-glow-btn" style={{ ...primaryBtn, marginTop: 0 }}>{saving ? 'Saving...' : 'Save to DB'}</button>
+          <button onClick={logout} style={dangerBtn}>Sign Out</button>
+        </div>
       </div>
 
       <div style={grid}>

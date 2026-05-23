@@ -8,6 +8,31 @@ use Illuminate\Support\Facades\Crypt;
 
 class SettingsController extends Controller
 {
+    public function getSettings(Request $request)
+    {
+        $user = $request->attributes->get('user');
+        $keys = DB::table('api_keys')
+            ->where('user_id', $user->id)
+            ->select('provider', 'key_hint', 'is_valid', 'last_tested_at')
+            ->get();
+
+        return response()->json([
+            'settings' => [
+                'avatarName' => $user->avatar_name,
+                'avatarStyle' => $user->avatar_style,
+                'avatarGender' => $user->avatar_gender ?? 'female',
+                'personality' => $user->personality,
+                'systemPrompt' => $user->system_prompt,
+                'voiceName' => $user->voice_name,
+                'voiceSpeed' => (float) $user->voice_speed,
+                'voicePitch' => (float) $user->voice_pitch,
+                'model' => $user->model,
+                'activeProvider' => $user->active_provider ?? 'anthropic',
+                'keyHints' => $keys,
+            ],
+        ]);
+    }
+
     public function saveSettings(Request $request)
     {
         $user = $request->attributes->get('user');
@@ -15,6 +40,7 @@ class SettingsController extends Controller
         $request->validate([
             'avatar_name' => 'nullable|string|max:100',
             'avatar_style' => 'nullable|string|max:20',
+            'avatar_gender' => 'nullable|string|in:male,female',
             'personality' => 'nullable|string|max:20',
             'system_prompt' => 'nullable|string',
             'voice_name' => 'nullable|string|max:100',
@@ -35,12 +61,14 @@ class SettingsController extends Controller
         $userUpdates = [];
         if ($request->has('avatar_name')) $userUpdates['avatar_name'] = $request->avatar_name;
         if ($request->has('avatar_style')) $userUpdates['avatar_style'] = $request->avatar_style;
+        if ($request->has('avatar_gender')) $userUpdates['avatar_gender'] = $request->avatar_gender;
         if ($request->has('personality')) $userUpdates['personality'] = $request->personality;
         if ($request->has('system_prompt')) $userUpdates['system_prompt'] = $request->system_prompt;
         if ($request->has('voice_name')) $userUpdates['voice_name'] = $request->voice_name;
         if ($request->has('voice_speed')) $userUpdates['voice_speed'] = $request->voice_speed;
         if ($request->has('voice_pitch')) $userUpdates['voice_pitch'] = $request->voice_pitch;
         if ($request->has('model')) $userUpdates['model'] = $request->model;
+        if ($request->has('activeProvider')) $userUpdates['active_provider'] = $request->activeProvider;
 
         if (!empty($userUpdates)) {
             DB::table('users')->where('id', $user->id)->update($userUpdates);
@@ -89,8 +117,10 @@ class SettingsController extends Controller
                 'email' => $updatedUser->email,
                 'avatar_name' => $updatedUser->avatar_name,
                 'avatar_style' => $updatedUser->avatar_style,
+                'avatar_gender' => $updatedUser->avatar_gender ?? 'female',
                 'personality' => $updatedUser->personality,
                 'model' => $updatedUser->model,
+                'active_provider' => $updatedUser->active_provider ?? 'anthropic',
                 'system_prompt' => $updatedUser->system_prompt,
                 'voice_name' => $updatedUser->voice_name,
                 'voice_speed' => $updatedUser->voice_speed,

@@ -83,6 +83,15 @@ export const useStore = create((set, get) => ({
     const saved = readJsonArray(`aria_messages_${sessionId}`);
     set({ activeSession: sessionId, messages: saved });
   },
+  setSessions: (sessions) => {
+    localStorage.setItem('aria_sessions', JSON.stringify(sessions));
+    set({ sessions });
+  },
+  addSession: (session) => set((s) => {
+    const updated = [session, ...s.sessions.filter(existing => existing.id !== session.id && existing.uuid !== session.uuid)];
+    localStorage.setItem('aria_sessions', JSON.stringify(updated));
+    return { sessions: updated };
+  }),
   clearHistory: () => {
     const active = get().activeSession || 'default';
     localStorage.removeItem(`aria_messages_${active}`);

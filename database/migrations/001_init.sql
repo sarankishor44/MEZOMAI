@@ -15,6 +15,7 @@ CREATE TABLE users (
   password_hash  VARCHAR(255) NOT NULL,
   avatar_name    VARCHAR(100) NOT NULL DEFAULT 'ARIA',
   avatar_style   VARCHAR(20)  NOT NULL DEFAULT 'cyan',
+  avatar_gender  VARCHAR(20)  NOT NULL DEFAULT 'female',
   avatar_image   TEXT         NULL,
   system_prompt  TEXT         NULL,
   personality    VARCHAR(20)  NOT NULL DEFAULT 'friendly',
@@ -22,6 +23,7 @@ CREATE TABLE users (
   voice_speed    DECIMAL(3,1) NOT NULL DEFAULT 1.0,
   voice_pitch    DECIMAL(3,1) NOT NULL DEFAULT 1.0,
   model          VARCHAR(50)  NOT NULL DEFAULT 'claude-sonnet-4-20250514',
+  active_provider VARCHAR(30) NOT NULL DEFAULT 'anthropic',
   is_active      TINYINT(1)   NOT NULL DEFAULT 1,
   created_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

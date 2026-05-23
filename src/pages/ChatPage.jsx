@@ -1,27 +1,128 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
+import { phpApi, pyApi } from '../utils/api'
 
 const MODES = ['Friendly', 'Developer', 'Coach', 'Professional']
 const PROMPTS = ['Review this idea', 'Draft a release note', 'Explain the code', 'Create meeting agenda']
 
+const toUiMessage = (message) => ({
+  id: message.uuid || message.id || Date.now(),
+  role: message.role,
+  content: message.content,
+  created_at: message.created_at,
+})
+
 export default function ChatPage() {
-  const { messages, addMessage, settings, setAvatarState, avatarState } = useStore()
+  const {
+    sessions,
+    setSessions,
+    addSession,
+    activeSession,
+    setActiveSession,
+    messages,
+    setMessages,
+    settings,
+    setAvatarState,
+    avatarState,
+  } = useStore()
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [selectedMode, setSelectedMode] = useState('Friendly')
   const [memoryOn, setMemoryOn] = useState(true)
   const [voiceOn, setVoiceOn] = useState(false)
+  const [syncState, setSyncState] = useState('Local ready')
   const bottomRef = useRef(null)
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, loading])
 
-  const getMockResponse = (userText) => {
+  useEffect(() => {
+    refreshSessions()
+  }, [])
+
+  useEffect(() => {
+    if (activeSession && activeSession !== 'default') loadMessages(activeSession)
+  }, [activeSession])
+
+  const refreshSessions = async () => {
+    try {
+      const { data } = await phpApi.get('/chat/sessions')
+      const normalized = data.map(s => ({ ...s, id: s.uuid }))
+      setSessions(normalized.length ? normalized : sessions)
+      if (normalized.length && activeSession === 'default') {
+        setActiveSession(normalized[0].uuid)
+      }
+      setSyncState('Synced with PHP')
+    } catch {
+      setSyncState('Local mode')
+    }
+  }
+
+  const ensureSession = async () => {
+    if (activeSession && activeSession !== 'default') return activeSession
+    try {
+      const { data } = await phpApi.post('/chat/sessions', {
+        title: input.trim().slice(0, 60) || 'New Chat',
+        personality: selectedMode.toLowerCase(),
+      })
+      const session = { ...data, id: data.uuid }
+      addSession(session)
+      setActiveSession(data.uuid)
+      return data.uuid
+    } catch {
+      return 'default'
+    }
+  }
+
+  const loadMessages = async (sessionUuid) => {
+    try {
+      const { data } = await phpApi.get(`/chat/sessions/${sessionUuid}/messages`)
+      setMessages(data.map(toUiMessage))
+      setSyncState('Messages loaded from PHP')
+    } catch {
+      setSyncState('Using local messages')
+    }
+  }
+
+  const saveMessage = async (sessionUuid, message) => {
+    if (!sessionUuid || sessionUuid === 'default') return null
+    try {
+      const { data } = await phpApi.post(`/chat/sessions/${sessionUuid}/message`, {
+        role: message.role,
+        content: message.content,
+        token_count: Math.ceil((message.content || '').length / 4),
+      })
+      setSyncState('Saved')
+      return toUiMessage(data)
+    } catch {
+      setSyncState('Save failed: local only')
+      return null
+    }
+  }
+
+  const generateReply = async (history, userText) => {
+    const systemPrompt = settings.systemPrompt || `You are ${settings.avatarName}, a ${selectedMode.toLowerCase()} AI assistant.`
+    if (settings.apiKey || settings.openAiKey || settings.geminiKey) {
+      try {
+        const { data } = await pyApi.post('/completion', {
+          system_prompt: systemPrompt,
+          prompt: memoryOn
+            ? history.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n')
+            : userText,
+          model: settings.model,
+          provider: settings.activeProvider || 'anthropic',
+          api_key: settings.apiKey || undefined,
+          openai_key: settings.openAiKey || undefined,
+          gemini_key: settings.geminiKey || undefined,
+        })
+        return data.response
+      } catch {}
+    }
+
     const text = userText.toLowerCase()
-    if (text.includes('code')) return 'Open Code Studio and I can help explain, refactor, or generate a focused patch against the active file.'
-    if (text.includes('meeting')) return 'Use Meet Rooms to simulate a premium call workspace with live transcript, AI companion, and generated notes.'
-    if (text.includes('deploy')) return 'I can help review production readiness against auth, reset tokens, CORS, rate limits, errors, indexes, logging, and rollback. The checklist is an engineering audit now, not a UI page.'
-    return `I am ${settings.avatarName || 'ARIA'}, running in demo mode. I can help with product planning, code review, meetings, deployment checks, and concise drafting.`
+    if (text.includes('code')) return 'Open Code Studio. Files now load from PHP and Run posts to /code/run for the Python sandbox.'
+    if (text.includes('meeting')) return 'Meet Rooms has camera preview, browser transcript, tasks, and generated notes.'
+    return `I am ${settings.avatarName || 'ARIA'}. Chat sessions and messages now persist through the PHP backend when it is available.`
   }
 
   const speakText = (text) => {
@@ -36,93 +137,40 @@ export default function ChatPage() {
     utter.onerror = () => setAvatarState('idle')
   }
 
-  const simulateMockStreaming = async (userText) => {
+  const sendMessage = async (override) => {
+    const text = (override ?? input).trim()
+    if (!text || loading) return
     setLoading(true)
     setAvatarState('thinking')
-    await new Promise(r => setTimeout(r, 650))
-    const replyText = getMockResponse(userText)
-    const assistantMsg = { role: 'assistant', content: '', id: Date.now() + 1, streaming: true }
-    addMessage(assistantMsg)
-    setAvatarState('talking')
-    setLoading(false)
 
-    let currentText = ''
-    for (const [index, word] of replyText.split(' ').entries()) {
-      await new Promise(r => setTimeout(r, 34))
-      currentText += (index === 0 ? '' : ' ') + word
-      useStore.setState(s => ({
-        messages: s.messages.map(m => m.id === assistantMsg.id ? { ...m, content: currentText, streaming: false } : m),
-      }))
-    }
+    const sessionUuid = await ensureSession()
+    const userMsg = { role: 'user', content: text, id: Date.now() }
+    const nextMessages = [...messages, userMsg]
+    setMessages(nextMessages)
+    setInput('')
+    await saveMessage(sessionUuid, userMsg)
+
+    const replyText = await generateReply(nextMessages, text)
+    const assistantMsg = { role: 'assistant', content: replyText, id: Date.now() + 1 }
+    setMessages([...nextMessages, assistantMsg])
+    await saveMessage(sessionUuid, assistantMsg)
+    setLoading(false)
     if (voiceOn) speakText(replyText)
     else setAvatarState('idle')
   }
 
-  const sendMessage = async (override) => {
-    const text = (override ?? input).trim()
-    if (!text || loading) return
-    const userMsg = { role: 'user', content: text, id: Date.now() }
-    addMessage(userMsg)
-    setInput('')
-
-    if (!settings.apiKey) {
-      simulateMockStreaming(text)
-      return
-    }
-
-    setLoading(true)
-    setAvatarState('thinking')
+  const newChat = async () => {
+    setMessages([])
     try {
-      const history = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }))
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': settings.apiKey,
-          'anthropic-version': '2023-06-01',
-          'dangerously-allow-developer-user-agent-override': 'true',
-        },
-        body: JSON.stringify({
-          model: settings.model || 'claude-3-5-sonnet-20241022',
-          max_tokens: 1024,
-          system: settings.systemPrompt || `You are ${settings.avatarName}, a ${selectedMode.toLowerCase()} AI assistant.`,
-          messages: memoryOn ? history : [{ role: 'user', content: text }],
-          stream: true,
-        }),
+      const { data } = await phpApi.post('/chat/sessions', {
+        title: 'New Chat',
+        personality: selectedMode.toLowerCase(),
       })
-
-      if (!response.ok) throw new Error(`API error: ${response.status}`)
-      const assistantMsg = { role: 'assistant', content: '', id: Date.now() + 1, streaming: true }
-      addMessage(assistantMsg)
-      setAvatarState('talking')
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let fullText = ''
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        const chunk = decoder.decode(value)
-        const lines = chunk.split('\n').filter(l => l.startsWith('data:'))
-        for (const line of lines) {
-          try {
-            const data = JSON.parse(line.slice(5))
-            if (data.type === 'content_block_delta' && data.delta?.text) {
-              fullText += data.delta.text
-              useStore.setState(s => ({
-                messages: s.messages.map(m => m.id === assistantMsg.id ? { ...m, content: fullText, streaming: false } : m),
-              }))
-            }
-          } catch {}
-        }
-      }
-      if (voiceOn && fullText) speakText(fullText)
-      else setAvatarState('idle')
-    } catch (e) {
-      addMessage({ role: 'assistant', content: `API unavailable: ${e.message}. I switched back to the local demo simulator.`, id: Date.now() + 2 })
-      setAvatarState('idle')
-      setTimeout(() => simulateMockStreaming(text), 800)
-    } finally {
-      setLoading(false)
+      const session = { ...data, id: data.uuid }
+      addSession(session)
+      setActiveSession(data.uuid)
+    } catch {
+      setActiveSession('default')
     }
   }
 
@@ -135,13 +183,26 @@ export default function ChatPage() {
 
   return (
     <div style={page} className="fade-in">
+      <aside style={sessionsPane}>
+        <button onClick={newChat} className="gold-glow-btn" style={newChatBtn}>New Chat</button>
+        <div style={sectionLabel}>Sessions</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {sessions.map(session => (
+            <button key={session.uuid || session.id} onClick={() => setActiveSession(session.uuid || session.id)} style={sessionBtn(activeSession === (session.uuid || session.id))}>
+              <span>{session.title || 'Chat Session'}</span>
+              <small>{session.message_count || 0} messages</small>
+            </button>
+          ))}
+        </div>
+      </aside>
+
       <section style={chatShell}>
         <header style={header}>
           <div>
-            <div style={eyebrow}>Claude-style workspace</div>
+            <div style={eyebrow}>PHP-backed chat</div>
             <h1 style={title}>Chat with {settings.avatarName}</h1>
           </div>
-          {!settings.apiKey && <span style={badge}>Demo Simulator</span>}
+          <span style={badge}>{syncState}</span>
         </header>
 
         <div style={promptRow}>
@@ -153,7 +214,7 @@ export default function ChatPage() {
             <div style={emptyState}>
               <div style={emptyOrb}>AI</div>
               <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 22 }}>What should we work on?</h2>
-              <p style={{ color: 'var(--t3)', maxWidth: 520, lineHeight: 1.6 }}>Ask for product strategy, code help, meeting prep, deployment review, or a clear next step.</p>
+              <p style={{ color: 'var(--t3)', maxWidth: 520, lineHeight: 1.6 }}>Messages are saved through PHP when the backend is available, so refresh keeps your chat.</p>
             </div>
           )}
           {messages.map(msg => <MessageBubble key={msg.id} msg={msg} avatarName={settings.avatarName}/>)}
@@ -163,14 +224,7 @@ export default function ChatPage() {
 
         <footer style={composerWrap}>
           <div style={composer}>
-            <textarea
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={`Message ${settings.avatarName}...`}
-              rows={1}
-              style={textarea}
-            />
+            <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={`Message ${settings.avatarName}...`} rows={1} style={textarea}/>
             <button onClick={() => sendMessage()} disabled={loading || !input.trim()} className="gold-glow-btn" style={sendBtn}>Send</button>
           </div>
         </footer>
@@ -182,20 +236,15 @@ export default function ChatPage() {
           <div style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 800 }}>{settings.avatarName}</div>
           <div style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--t3)', textTransform: 'uppercase', marginTop: 4 }}>{avatarState}</div>
         </div>
-
         <div style={controlBlock}>
           <div style={sectionLabel}>Mode</div>
           <div style={modeGrid}>
-            {MODES.map(mode => (
-              <button key={mode} onClick={() => setSelectedMode(mode)} style={modeBtn(selectedMode === mode)}>{mode}</button>
-            ))}
+            {MODES.map(mode => <button key={mode} onClick={() => setSelectedMode(mode)} style={modeBtn(selectedMode === mode)}>{mode}</button>)}
           </div>
         </div>
-
-        <ToggleRow label="Memory" sublabel="Use chat history" value={memoryOn} onChange={setMemoryOn}/>
+        <ToggleRow label="Memory" sublabel="Use loaded history" value={memoryOn} onChange={setMemoryOn}/>
         <ToggleRow label="Voice" sublabel="Browser text to speech" value={voiceOn} onChange={setVoiceOn}/>
-
-        <button onClick={() => useStore.getState().clearHistory()} style={outlineBtn}>Clear History</button>
+        <button onClick={() => useStore.getState().clearHistory()} style={outlineBtn}>Clear Local View</button>
       </aside>
     </div>
   )
@@ -230,6 +279,9 @@ function ToggleRow({ label, sublabel, value, onChange }) {
 }
 
 const page = { display: 'flex', flex: 1, overflow: 'hidden', padding: 18, gap: 18 }
+const sessionsPane = { width: 230, background: 'var(--bg1)', border: '1px solid var(--b1)', borderRadius: 18, padding: 14, display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }
+const newChatBtn = { border: 'none', padding: '11px 12px', fontWeight: 800 }
+const sessionBtn = (active) => ({ background: active ? 'var(--gold-light)' : 'var(--bg2)', border: `1px solid ${active ? 'var(--gold)' : 'var(--b1)'}`, color: active ? 'var(--gold)' : 'var(--t2)', padding: 10, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 4, fontWeight: 800 })
 const chatShell = { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg1)', border: '1px solid var(--b1)', borderRadius: 18, overflow: 'hidden', boxShadow: '0 24px 60px rgba(15,23,42,.10)' }
 const header = { padding: '20px 24px', borderBottom: '1px solid var(--b1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }
 const eyebrow = { fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--gold)', letterSpacing: '.14em', textTransform: 'uppercase' }
