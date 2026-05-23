@@ -76,11 +76,15 @@ export const useStore = create((set, get) => ({
   // ── SETTINGS ──────────────────────────────────
   settings: JSON.parse(localStorage.getItem('aria_settings')) || {
     apiKey: '',
+    openAiKey: '',
+    geminiKey: '',
     elevenLabsKey: '',
     dailyKey: '',
+    activeProvider: 'anthropic',
     model: 'claude-3-5-sonnet-20241022',
     avatarName: 'ARIA',
     avatarStyle: 'gold',
+    avatarGender: 'female',
     personality: 'friendly',
     systemPrompt: 'You are ARIA, a helpful and intelligent AI assistant. Speak in a concise, conversational tone.',
     voiceName: 'Rachel',

@@ -6,108 +6,129 @@ export default function AvatarFace({ size = 120, showGlow = true }) {
   const [blink, setBlink] = useState(false)
   const [mouthOpen, setMouthOpen] = useState(0)
 
-  // Blink randomly
   useEffect(() => {
     const interval = setInterval(() => {
       setBlink(true)
-      setTimeout(() => setBlink(false), 150)
-    }, 2800 + Math.random() * 2000)
+      setTimeout(() => setBlink(false), 140)
+    }, 2600 + Math.random() * 1800)
     return () => clearInterval(interval)
   }, [])
 
-  // Mouth animation while talking
   useEffect(() => {
-    if (avatarState !== 'talking') { setMouthOpen(0); return }
-    const interval = setInterval(() => {
-      setMouthOpen(Math.random() * 8)
-    }, 120)
+    if (avatarState !== 'talking') {
+      setMouthOpen(0)
+      return
+    }
+    const interval = setInterval(() => setMouthOpen(Math.random() * 8), 110)
     return () => clearInterval(interval)
   }, [avatarState])
 
   const colorMap = {
-    cyan: '#00d4ff',
-    purple: '#c084fc',
-    coral: '#f87171',
-    gold: '#d4af37'
+    cyan: '#22d3ee',
+    purple: '#a78bfa',
+    coral: '#fb7185',
+    gold: '#f8c96b',
+    blue: '#60a5fa',
   }
-  const color = colorMap[settings.avatarStyle] || '#d4af37'
-
-  // Dynamic glow depending on talking/listening/thinking/idle states
-  const glowColor = avatarState === 'talking' ? '#00e676'
-    : avatarState === 'listening' ? (theme === 'light' ? '#00838f' : '#00d4ff')
-    : avatarState === 'thinking' ? '#c084fc'
+  const color = colorMap[settings.avatarStyle] || colorMap.blue
+  const gender = settings.avatarGender || 'female'
+  const glowColor = avatarState === 'talking' ? '#4ade80'
+    : avatarState === 'listening' ? '#22d3ee'
+    : avatarState === 'thinking' ? '#a78bfa'
     : color
-
   const eyeScaleY = blink ? 0.08 : 1
+  const dark = theme === 'dark'
 
   return (
     <div style={{ width: size, height: size, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       {showGlow && (
         <div style={{
-          position: 'absolute', inset: -8, borderRadius: '50%',
-          background: `conic-gradient(${glowColor}, transparent, ${glowColor})`,
-          animation: 'spin 4s linear infinite', opacity: avatarState === 'idle' ? 0.35 : 0.75,
-          transition: 'all .5s',
-          boxShadow: `0 0 15px ${glowColor}55`
+          position: 'absolute',
+          inset: -8,
+          borderRadius: '50%',
+          background: `conic-gradient(from 180deg, ${glowColor}, transparent 35%, ${glowColor})`,
+          animation: 'avatarSpin 5s linear infinite',
+          opacity: avatarState === 'idle' ? 0.38 : 0.82,
+          boxShadow: `0 0 28px ${glowColor}55`,
         }}>
-          <div style={{ position: 'absolute', inset: 3, borderRadius: '50%', background: 'var(--bg1)' }}/>
+          <div style={{ position: 'absolute', inset: 4, borderRadius: '50%', background: 'var(--bg1)' }}/>
         </div>
       )}
+
       <div style={{
-        position: 'relative', width: size, height: size, borderRadius: '50%',
-        background: theme === 'light' 
-          ? 'linear-gradient(145deg, #faf6eb, #ebdcb9)' 
-          : 'linear-gradient(145deg, #18140a, #0c0a06)',
-        border: `2px solid var(--b2)`, overflow: 'hidden',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: 'inset 0 0 10px rgba(0,0,0,0.3)'
+        position: 'relative',
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        overflow: 'hidden',
+        border: `1px solid ${color}`,
+        background: dark ? '#111827' : '#f8fafc',
+        boxShadow: 'inset 0 0 18px rgba(15,23,42,.28)',
       }}>
-        <svg width={size * 0.72} height={size * 0.72} viewBox="0 0 80 80">
-          {/* Head Shape */}
-          <ellipse cx="40" cy="42" rx="28" ry="30" fill="var(--bg2)" stroke={color} strokeWidth="1" opacity="0.65"/>
+        <svg width={size} height={size} viewBox="0 0 120 120">
+          <defs>
+            <linearGradient id={`skin-${gender}-${size}`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor={gender === 'male' ? '#f1c7a7' : '#ffd7c2'} />
+              <stop offset="100%" stopColor={gender === 'male' ? '#c98f6c' : '#e9a18f'} />
+            </linearGradient>
+            <linearGradient id={`hair-${gender}-${size}`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor={gender === 'male' ? '#1f2937' : '#f8fafc'} />
+              <stop offset="100%" stopColor={gender === 'male' ? '#475569' : '#dbeafe'} />
+            </linearGradient>
+          </defs>
 
-          {/* Eyes */}
-          <g transform={`translate(26, 33) scale(1, ${eyeScaleY})`} style={{ transformOrigin: '0 4px', transition: 'transform .08s' }}>
-            <ellipse cx="0" cy="4" rx="5" ry="5" fill={color} opacity="0.9"/>
-            <ellipse cx="0" cy="3" rx="2" ry="2" fill="var(--bg1)"/>
-            <circle cx="1.2" cy="2" r="0.8" fill="white" opacity="0.85"/>
-          </g>
-          <g transform={`translate(54, 33) scale(1, ${eyeScaleY})`} style={{ transformOrigin: '0 4px', transition: 'transform .08s' }}>
-            <ellipse cx="0" cy="4" rx="5" ry="5" fill={color} opacity="0.9"/>
-            <ellipse cx="0" cy="3" rx="2" ry="2" fill="var(--bg1)"/>
-            <circle cx="1.2" cy="2" r="0.8" fill="white" opacity="0.85"/>
-          </g>
+          <rect width="120" height="120" fill={dark ? '#0f172a' : '#e0f2fe'} />
+          <circle cx="60" cy="62" r="47" fill={`url(#skin-${gender}-${size})`} />
 
-          {/* Eyebrows */}
-          <path d={avatarState === 'thinking' ? 'M21 25 Q26 21 31 25' : 'M21 26 Q26 23 31 26'}
-            fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" opacity="0.8"/>
-          <path d={avatarState === 'thinking' ? 'M49 25 Q54 21 59 25' : 'M49 26 Q54 23 59 26'}
-            fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" opacity="0.8"/>
-
-          {/* Mouth */}
-          <path
-            d={`M30 57 Q40 ${57 + mouthOpen + (avatarState === 'talking' ? 2 : 3)} 50 57`}
-            fill={mouthOpen > 3 ? 'var(--bg)' : 'none'}
-            stroke={color} strokeWidth="2.2" strokeLinecap="round"
-            style={{ transition: 'all .1s' }}
-          />
-
-          {/* Scanline overlay (cyber effect) */}
-          {avatarState !== 'idle' && (
-            <rect x="12" y="0" width="56" height="2.5" fill={color} opacity="0.12">
-              <animateTransform attributeName="transform" type="translate" values="0,0;0,80;0,0" dur="2.2s" repeatCount="indefinite"/>
-            </rect>
+          {gender === 'female' ? (
+            <>
+              <path d="M13 61C15 20 43 5 61 7c23 2 41 21 43 58-12-18-24-27-44-27-20 0-35 8-47 23Z" fill={`url(#hair-${gender}-${size})`} />
+              <path d="M18 59c1 26 9 44 20 55-15-4-26-18-30-38-2-11 2-18 10-17ZM102 59c-1 26-9 44-20 55 15-4 26-18 30-38 2-11-2-18-10-17Z" fill={`url(#hair-${gender}-${size})`} opacity=".95"/>
+              <path d="M25 29h70c-4 13-16 18-35 18S29 42 25 29Z" fill={`url(#hair-${gender}-${size})`} />
+            </>
+          ) : (
+            <>
+              <path d="M20 53C22 23 42 11 61 12c25 1 39 17 40 43-10-10-21-15-39-15-19 0-31 4-42 13Z" fill={`url(#hair-${gender}-${size})`} />
+              <path d="M28 42c8-20 48-26 64-3-18-4-45-3-64 3Z" fill={`url(#hair-${gender}-${size})`} />
+            </>
           )}
 
-          {/* Golden Circuit/Aura Details */}
-          <path d="M12 42 L5 42 L5 55" fill="none" stroke={color} strokeWidth="0.8" opacity="0.35"/>
-          <path d="M68 42 L75 42 L75 55" fill="none" stroke={color} strokeWidth="0.8" opacity="0.35"/>
-          <circle cx="5" cy="55" r="1.5" fill={color} opacity="0.5"/>
-          <circle cx="75" cy="55" r="1.5" fill={color} opacity="0.5"/>
+          <g transform={`translate(42, 55) scale(1, ${eyeScaleY})`} style={{ transformOrigin: '42px 59px', transition: 'transform .08s' }}>
+            <ellipse cx="0" cy="4" rx={gender === 'female' ? 8 : 6.5} ry="7" fill="#fff" />
+            <circle cx="1" cy="4" r="4.2" fill={color} />
+            <circle cx="2" cy="3" r="1.5" fill="#fff" />
+          </g>
+          <g transform={`translate(78, 55) scale(1, ${eyeScaleY})`} style={{ transformOrigin: '78px 59px', transition: 'transform .08s' }}>
+            <ellipse cx="0" cy="4" rx={gender === 'female' ? 8 : 6.5} ry="7" fill="#fff" />
+            <circle cx="1" cy="4" r="4.2" fill={color} />
+            <circle cx="2" cy="3" r="1.5" fill="#fff" />
+          </g>
+
+          <path d={avatarState === 'thinking' ? 'M33 48q9-6 18-1' : 'M34 49q8-4 16 0'} fill="none" stroke={gender === 'male' ? '#334155' : '#475569'} strokeWidth="2.5" strokeLinecap="round" />
+          <path d={avatarState === 'thinking' ? 'M69 47q9-5 18 1' : 'M70 49q8-4 16 0'} fill="none" stroke={gender === 'male' ? '#334155' : '#475569'} strokeWidth="2.5" strokeLinecap="round" />
+          {gender === 'female' && (
+            <>
+              <path d="M31 56q10-7 21 0" fill="none" stroke="#111827" strokeWidth="1.6" strokeLinecap="round" opacity=".65"/>
+              <path d="M68 56q10-7 21 0" fill="none" stroke="#111827" strokeWidth="1.6" strokeLinecap="round" opacity=".65"/>
+              <circle cx="20" cy="71" r="5" fill="none" stroke={color} strokeWidth="2"/>
+              <circle cx="100" cy="71" r="5" fill="none" stroke={color} strokeWidth="2"/>
+            </>
+          )}
+
+          <path d="M57 63q4 4 0 9" fill="none" stroke="#b87563" strokeWidth="1.8" strokeLinecap="round" opacity=".65"/>
+          <path
+            d={`M43 83 Q60 ${92 + mouthOpen} 77 83`}
+            fill={mouthOpen > 3 ? '#111827' : 'none'}
+            stroke={gender === 'female' ? '#9f1239' : '#7f1d1d'}
+            strokeWidth="3"
+            strokeLinecap="round"
+          />
+          {mouthOpen > 3 && <path d="M48 84h24" stroke="#fff" strokeWidth="2" strokeLinecap="round" opacity=".9"/>}
+          <text x="60" y="112" textAnchor="middle" fill={color} fontSize="7" fontFamily="monospace" fontWeight="700">AI AGENT</text>
         </svg>
       </div>
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`@keyframes avatarSpin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }

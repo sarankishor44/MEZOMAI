@@ -24,7 +24,11 @@ class SettingsController extends Controller
             
             // API credentials
             'apiKey' => 'nullable|string',
-            'elevenLabsKey' => 'nullable|string'
+            'openAiKey' => 'nullable|string',
+            'geminiKey' => 'nullable|string',
+            'elevenLabsKey' => 'nullable|string',
+            'dailyKey' => 'nullable|string',
+            'activeProvider' => 'nullable|string|max:30'
         ]);
 
         // 1. Update user settings
@@ -43,42 +47,35 @@ class SettingsController extends Controller
         }
 
         // 2. Save/Update encrypted API keys
-        if ($request->has('apiKey') && $request->apiKey !== null) {
-            $key = $request->apiKey;
-            if ($key !== '') {
-                DB::table('api_keys')->updateOrInsert(
-                    ['user_id' => $user->id, 'provider' => 'anthropic'],
-                    [
-                        'encrypted_key' => Crypt::encryptString($key),
-                        'key_hint' => '...' . substr($key, -4),
-                        'is_valid' => 1,
-                        'last_tested_at' => now(),
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ]
-                );
-            } else {
-                // Clear the key if empty string passed
-                DB::table('api_keys')->where('user_id', $user->id)->where('provider', 'anthropic')->delete();
-            }
-        }
+        $providerKeys = [
+            'apiKey' => 'anthropic',
+            'openAiKey' => 'openai',
+            'geminiKey' => 'gemini',
+            'elevenLabsKey' => 'elevenlabs',
+            'dailyKey' => 'daily',
+        ];
 
-        if ($request->has('elevenLabsKey') && $request->elevenLabsKey !== null) {
-            $key = $request->elevenLabsKey;
-            if ($key !== '') {
-                DB::table('api_keys')->updateOrInsert(
-                    ['user_id' => $user->id, 'provider' => 'elevenlabs'],
-                    [
-                        'encrypted_key' => Crypt::encryptString($key),
-                        'key_hint' => '...' . substr($key, -4),
-                        'is_valid' => 1,
-                        'last_tested_at' => now(),
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ]
-                );
-            } else {
-                DB::table('api_keys')->where('user_id', $user->id)->where('provider', 'elevenlabs')->delete();
+        foreach ($providerKeys as $field => $provider) {
+            if ($request->has($field) && $request->{$field} !== null) {
+                $key = $request->{$field};
+                if ($key !== '') {
+                    DB::table('api_keys')->updateOrInsert(
+                        ['user_id' => $user->id, 'provider' => $provider],
+                        [
+                            'encrypted_key' => Crypt::encryptString($key),
+                            'key_hint' => '...' . substr($key, -4),
+                            'is_valid' => 1,
+                            'last_tested_at' => now(),
+                            'created_at' => now(),
+                            'updated_at' => now()
+                        ]
+                    );
+                } else {
+                    DB::table('api_keys')
+                        ->where('user_id', $user->id)
+                        ->where('provider', $provider)
+                        ->delete();
+                }
             }
         }
 

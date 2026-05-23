@@ -10,12 +10,19 @@ class CompletionRequest(BaseModel):
     system_prompt: str
     prompt: str
     model: Optional[str] = None
+    provider: Optional[str] = "anthropic"
     api_key: Optional[str] = None
+    openai_key: Optional[str] = None
+    gemini_key: Optional[str] = None
 
 class SummarizeRequest(BaseModel):
     transcript: List[dict]  # List of {"speaker": "user"|"bot", "content": "..."}
     bot_name: Optional[str] = "ARIA"
+    model: Optional[str] = None
+    provider: Optional[str] = "anthropic"
     api_key: Optional[str] = None
+    openai_key: Optional[str] = None
+    gemini_key: Optional[str] = None
 
 @router.post("/completion")
 async def generate_completion(req: CompletionRequest):
@@ -25,11 +32,14 @@ async def generate_completion(req: CompletionRequest):
             system_prompt=req.system_prompt,
             prompt=req.prompt,
             model=req.model,
-            api_key=req.api_key
+            api_key=req.api_key,
+            provider=req.provider,
+            openai_key=req.openai_key,
+            gemini_key=req.gemini_key,
         )
         return {"response": response}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="AI completion failed.")
 
 @router.post("/summarize")
 async def summarize_meeting(req: SummarizeRequest):
@@ -49,8 +59,11 @@ async def summarize_meeting(req: SummarizeRequest):
         response = await service.generate_completion(
             system_prompt=system_prompt,
             prompt=prompt,
-            model="claude-3-5-sonnet-20241022",
-            api_key=req.api_key
+            model=req.model or "claude-3-5-sonnet-20241022",
+            api_key=req.api_key,
+            provider=req.provider,
+            openai_key=req.openai_key,
+            gemini_key=req.gemini_key,
         )
         
         # Clean response if LLM added formatting markdown wrappers

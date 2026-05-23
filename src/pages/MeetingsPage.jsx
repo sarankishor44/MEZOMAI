@@ -1,6 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
+import { createWebSocket, pyApi } from '../utils/api'
+
+function detectPlatform(value) {
+  const text = (value || '').toLowerCase()
+  if (text.includes('meet.google.com')) return { name: 'Google Meet', short: 'GM', color: '#16a34a' }
+  if (text.includes('zoom.us')) return { name: 'Zoom', short: 'ZM', color: '#2d8cff' }
+  if (text.includes('teams.microsoft')) return { name: 'Microsoft Teams', short: 'TM', color: '#6264a7' }
+  if (text.includes('meet.jit.si')) return { name: 'Jitsi', short: 'JT', color: '#f97316' }
+  if (text.includes('whereby.com')) return { name: 'Whereby', short: 'WB', color: '#d97706' }
+  return { name: 'MEZOMAI Room', short: 'AI', color: 'var(--gold)' }
+}
+
+function nowLabel() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}
 
 export default function MeetingsPage() {
   const {
@@ -12,406 +27,414 @@ export default function MeetingsPage() {
     addTranscriptLine,
     meetingNotes,
     setMeetingNotes,
+    recentMeetings,
     saveRecentMeeting,
   } = useStore()
 
-  // Local state
-  const [roomIdInput, setRoomIdInput] = useState('')
-  const [isMuted, setIsMuted] = useState(false)
-  const [isVideoOff, setIsVideoOff] = useState(false)
-  const [inCallDuration, setInCallDuration] = useState(0)
-  const [simulatedSpeakers, setSimulatedSpeakers] = useState([])
-  
+  const [roomInput, setRoomInput] = useState('')
+  const [taskInput, setTaskInput] = useState('')
+  const [tasks, setTasks] = useState([])
+  const [duration, setDuration] = useState(0)
+  const [muted, setMuted] = useState(false)
+  const [cameraOff, setCameraOff] = useState(false)
+  const [listening, setListening] = useState(false)
+  const [mediaError, setMediaError] = useState('')
+  const [summaryLoading, setSummaryLoading] = useState(false)
+
+  const videoRef = useRef(null)
+  const streamRef = useRef(null)
   const timerRef = useRef(null)
+  const wsRef = useRef(null)
+  const recognitionRef = useRef(null)
   const transcriptEndRef = useRef(null)
-  
-  // Daily.co URL or simulated Room URL
-  const roomUrl = activeRoom ? `https://mezomai.daily.co/${activeRoom}` : ''
 
-  // Format seconds
+  const platform = useMemo(() => detectPlatform(roomInput || activeRoom), [roomInput, activeRoom])
+
   const formatTime = (secs) => {
-    const m = Math.floor(secs / 60).toString().padStart(2, '0')
+    const h = Math.floor(secs / 3600).toString().padStart(2, '0')
+    const m = Math.floor((secs % 3600) / 60).toString().padStart(2, '0')
     const s = (secs % 60).toString().padStart(2, '0')
-    return `${m}:${s}`
+    return `${h}:${m}:${s}`
   }
 
-  // Join call handler
-  const handleJoinCall = (e) => {
-    e?.preventDefault()
-    const finalRoom = roomIdInput.trim() || 'mezomai-general-room'
-    
-    // Clear previous call states
-    useStore.setState({ 
-      activeRoom: finalRoom,
-      transcript: [],
-      meetingNotes: null 
-    })
-    setInCallDuration(0)
-    setMeetingState('incall')
-  }
-
-  // Effect to manage duration timer and mock dialogue during call
-  useEffect(() => {
-    if (meetingState === 'incall') {
-      timerRef.current = setInterval(() => {
-        setInCallDuration((prev) => prev + 1)
-      }, 1000)
-
-      // Seed initial transcript line
-      addTranscriptLine({
-        speaker: 'System',
-        text: `Secure WebRTC Connection established in room: "${activeRoom}"`,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-      })
-
-      // Set up dialogue scripts that fire periodically to simulate a live meeting transcript
-      const dialogues = [
-        { delay: 3, speaker: 'User', text: "Hello! Can you hear me clearly? I'm testing the audio and camera settings." },
-        { delay: 8, speaker: 'bot', text: `Hi there! Yes, I hear you loud and clear. My name is ${settings.avatarName}. I've joined your meeting room and I am currently transcribing this discussion in real-time.` },
-        { delay: 15, speaker: 'User', text: "Fantastic. Let's outline the agenda for the next MEZOMAI release. We need to ship the frontend on Vercel, link up the API fallbacks, and complete the Docker Compose setup." },
-        { delay: 22, speaker: 'bot', text: "Understood. I will note down that the critical objectives are: 1. Deploy the React SPA to Vercel, 2. Validate API key storage fallback, and 3. Verify Docker orchestration packages." },
-        { delay: 30, speaker: 'User', text: "Perfect. We also need to list all component counts to make sure we didn't miss anything. Let's make sure the client metrics show up correctly in the analytics page too." },
-        { delay: 37, speaker: 'bot', text: "Got it. I'll make sure to add component tracking and analytics updates to the action items list in our meeting summary." }
-      ]
-
-      const timeouts = dialogues.map((d) => {
-        return setTimeout(() => {
-          addTranscriptLine({
-            speaker: d.speaker === 'bot' ? settings.avatarName : 'You',
-            text: d.text,
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-          })
-          // Trigger avatar talking or listening states
-          if (d.speaker === 'bot') {
-            useStore.setState({ avatarState: 'talking' })
-            setTimeout(() => useStore.setState({ avatarState: 'idle' }), 3500)
-          } else {
-            useStore.setState({ avatarState: 'listening' })
-            setTimeout(() => useStore.setState({ avatarState: 'idle' }), 2000)
-          }
-        }, d.delay * 1000)
-      })
-
-      return () => {
-        clearInterval(timerRef.current)
-        timeouts.forEach(clearTimeout)
-      }
+  const startMedia = async () => {
+    try {
+      setMediaError('')
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      streamRef.current = stream
+      if (videoRef.current) videoRef.current.srcObject = stream
+    } catch (e) {
+      setMediaError('Camera or microphone permission was blocked. You can still run the meeting companion in text mode.')
     }
-  }, [meetingState, activeRoom])
+  }
 
-  // Scroll transcript to bottom on update
+  const stopMedia = () => {
+    streamRef.current?.getTracks().forEach(track => track.stop())
+    streamRef.current = null
+  }
+
+  const connectSocket = (roomId) => {
+    try {
+      const ws = createWebSocket(`/meeting/${encodeURIComponent(roomId)}`)
+      wsRef.current = ws
+      ws.onopen = () => ws.send(JSON.stringify({ type: 'join', user: 'Operator' }))
+      ws.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data)
+          if (payload.type === 'transcript_line') {
+            addTranscriptLine({
+              speaker: payload.name || payload.speaker || 'Participant',
+              text: payload.text,
+              time: nowLabel(),
+            })
+          }
+          if (payload.type === 'bot_speech') {
+            addTranscriptLine({
+              speaker: settings.avatarName,
+              text: payload.text,
+              time: nowLabel(),
+            })
+          }
+        } catch {}
+      }
+    } catch {
+      wsRef.current = null
+    }
+  }
+
+  const startSpeechRecognition = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      setMediaError('Speech recognition is not supported in this browser.')
+      return
+    }
+    const recognition = new SpeechRecognition()
+    recognition.continuous = true
+    recognition.interimResults = false
+    recognition.lang = 'en-US'
+    recognition.onresult = (event) => {
+      const result = event.results[event.results.length - 1]
+      const text = result?.[0]?.transcript?.trim()
+      if (!text) return
+      const line = { speaker: 'You', text, time: nowLabel() }
+      addTranscriptLine(line)
+      wsRef.current?.send(JSON.stringify({ type: 'transcript', speaker: 'You', text }))
+      window.setTimeout(() => {
+        addTranscriptLine({
+          speaker: settings.avatarName,
+          text: `I captured that. I will track it as meeting context and prepare notes for ${platform.name}.`,
+          time: nowLabel(),
+        })
+        useStore.setState({ avatarState: 'talking' })
+        window.setTimeout(() => useStore.setState({ avatarState: 'idle' }), 1800)
+      }, 700)
+    }
+    recognition.onend = () => setListening(false)
+    recognition.onerror = () => setListening(false)
+    recognition.start()
+    recognitionRef.current = recognition
+    setListening(true)
+    useStore.setState({ avatarState: 'listening' })
+  }
+
+  const stopSpeechRecognition = () => {
+    recognitionRef.current?.stop()
+    recognitionRef.current = null
+    setListening(false)
+    useStore.setState({ avatarState: 'idle' })
+  }
+
+  const handleJoin = async (e) => {
+    e?.preventDefault()
+    const room = roomInput.trim() || `mezomai-room-${Date.now()}`
+    useStore.setState({ activeRoom: room, transcript: [], meetingNotes: null })
+    setDuration(0)
+    setTasks([])
+    setMeetingState('incall')
+    connectSocket(room)
+    await startMedia()
+    addTranscriptLine({
+      speaker: 'System',
+      text: `${platform.name} companion room started. AI agent ${settings.avatarName} is ready as a ${settings.avatarGender || 'female'} avatar.`,
+      time: nowLabel(),
+    })
+    timerRef.current = window.setInterval(() => setDuration(v => v + 1), 1000)
+  }
+
+  const handleLeave = async () => {
+    window.clearInterval(timerRef.current)
+    stopSpeechRecognition()
+    stopMedia()
+    wsRef.current?.close()
+    wsRef.current = null
+    setMeetingState('postcall')
+    saveRecentMeeting({
+      id: Date.now().toString(),
+      roomName: activeRoom,
+      platform: platform.name,
+      duration: formatTime(duration),
+      date: new Date().toLocaleString(),
+      transcriptLength: transcript.length,
+    })
+    await generateNotes()
+  }
+
+  const generateNotes = async () => {
+    setSummaryLoading(true)
+    const mapped = transcript
+      .filter(line => line.speaker !== 'System')
+      .map(line => ({ speaker: line.speaker === settings.avatarName ? 'bot' : 'user', content: line.text }))
+    try {
+      const { data } = await pyApi.post('/summarize', {
+        transcript: mapped,
+        bot_name: settings.avatarName,
+        model: settings.model,
+        provider: settings.activeProvider || 'anthropic',
+        api_key: settings.apiKey || undefined,
+        openai_key: settings.openAiKey || undefined,
+        gemini_key: settings.geminiKey || undefined,
+      })
+      setMeetingNotes({
+        summary: data.summary,
+        keyPoints: data.key_points || [],
+        actionItems: data.action_items || [],
+      })
+    } catch {
+      setMeetingNotes({
+        summary: `Meeting with ${settings.avatarName} ended after ${formatTime(duration)}. The conversation covered setup, tasks, and coordination for the current workspace.`,
+        keyPoints: [
+          `${platform.name} companion room started successfully.`,
+          `${transcript.length} transcript lines were captured locally.`,
+          `${tasks.length} meeting tasks were tracked.`,
+        ],
+        actionItems: tasks.length ? tasks.map(t => t.text) : ['Review transcript and convert important decisions into project tasks.'],
+      })
+    } finally {
+      setSummaryLoading(false)
+    }
+  }
+
+  const addTask = () => {
+    if (!taskInput.trim()) return
+    setTasks(prev => [{ id: Date.now(), text: taskInput.trim(), done: false }, ...prev])
+    setTaskInput('')
+  }
+
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [transcript])
 
-  // Leave Call and Generate Summary
-  const handleLeaveCall = () => {
-    clearInterval(timerRef.current)
-    setMeetingState('postcall')
-    
-    // Save meeting to history list
-    const finishedMeeting = {
-      id: Date.now().toString(),
-      roomName: activeRoom,
-      duration: formatTime(inCallDuration),
-      date: new Date().toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-      transcriptLength: transcript.length,
-    }
-    saveRecentMeeting(finishedMeeting)
+  useEffect(() => () => {
+    window.clearInterval(timerRef.current)
+    stopSpeechRecognition()
+    stopMedia()
+    wsRef.current?.close()
+  }, [])
 
-    // Simulate Claude generating summary & action items
-    setMeetingNotes({
-      summary: `In this session, the operator and ${settings.avatarName} established a WebRTC meeting room to review the launch requirements for the MEZOMAI AI Character Platform. The discussion focused on SPA deployment settings, local emulator support, component tracking metrics, and Docker configurations.`,
-      keyPoints: [
-        "Verified low-latency WebRTC streams using native browser audio-capture APIs.",
-        `Configured ${settings.avatarName} as an active participant to transcribe audio inputs and speak outputs.`,
-        "Discussed hosting the React static app on Vercel with direct client-side fallback triggers.",
-      ],
-      actionItems: [
-        "Deploy React frontend directory to Vercel via vercel.json overrides.",
-        "Ensure local settings support entering Claude API keys for direct browser-to-Anthropic connections.",
-        "Compile docker-compose file configuration containing the 6 primary core services.",
-        "Push finished codebase to the sarankishor44/MEZOMAI remote repository."
-      ]
-    })
-  }
-
-  // Download Notes helper
-  const handleDownloadNotes = () => {
-    if (!meetingNotes) return
-    const text = `
-=============================================
-MEZOMAI MEETING SUMMARY & NOTES
-Room: ${activeRoom}
-Date: ${new Date().toLocaleDateString()}
-Duration: ${formatTime(inCallDuration)}
-=============================================
-
-SUMMARY:
-${meetingNotes.summary}
-
-KEY POINTS:
-${meetingNotes.keyPoints.map((p, i) => `${i + 1}. ${p}`).join('\n')}
-
-ACTION ITEMS:
-${meetingNotes.actionItems.map((a, i) => `- [ ] ${a}`).join('\n')}
-    `
-    const blob = new Blob([text], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `meeting-notes-${activeRoom}.txt`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  // RENDER CONFIGURATION VIEW
   if (meetingState === 'configure') {
     return (
-      <div style={{ flex: 1, overflowY: 'auto', padding: '32px' }} className="fade-in">
-        <div style={{ maxWidth: 780, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={page} className="fade-in">
+        <div style={hero}>
           <div>
-            <h1 style={{ fontFamily: 'var(--ff)', fontSize: 24, color: 'var(--gold)', fontWeight: 800, marginBottom: 6 }}>Video Meetings</h1>
-            <p style={{ fontSize: 13, color: 'var(--t2)', lineHeight: 1.6 }}>
-              Start an instant WebRTC conference room. Your custom AI Character ({settings.avatarName}) will join as an active participant to transcribe your call, converse dynamically, and export meeting notes.
-            </p>
+            <div style={eyebrow}>Meet companion</div>
+            <h1 style={title}>Launch an AI meeting room</h1>
+            <p style={subcopy}>Paste a Zoom, Google Meet, Teams, Jitsi or custom link. MEZOMAI opens a companion workspace with camera preview, mic transcript, AI responses, tasks and notes.</p>
           </div>
+          <AvatarFace size={132}/>
+        </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
-            {/* Form Column */}
-            <form onSubmit={handleJoinCall} style={{ background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ fontFamily: 'var(--ff)', fontSize: 14, fontWeight: 700, borderBottom: '1px solid var(--b1)', paddingBottom: 10 }}>Room Settings</div>
-              
-              <div>
-                <label style={labelStyle}>Room ID / Meeting Link</label>
-                <input 
-                  placeholder="e.g. daily-development-scrum" 
-                  value={roomIdInput}
-                  onChange={(e) => setRoomIdInput(e.target.value)}
-                  style={{ width: '100%', marginTop: 6 }}
-                />
-              </div>
-
-              <div style={{ background: 'var(--bg1)', padding: 14, borderRadius: 10, fontSize: 11, color: 'var(--t3)', lineHeight: 1.5 }}>
-                ✨ <strong>Instant Platform Detection</strong>: Paste a Daily.co, Zoom, Teams, or Google Meet URL to pre-load configuration settings dynamically.
-              </div>
-
-              <button type="submit" className="gold-glow-btn" style={{ padding: '12px', border: 'none', borderRadius: 10, fontSize: 13, cursor: 'pointer', marginTop: 10 }}>
-                🚀 Join Room & Launch Avatar
-              </button>
-            </form>
-
-            {/* Preview Column */}
-            <div style={{ background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-              <div style={{ fontFamily: 'var(--ff)', fontSize: 12, fontWeight: 700, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: '.06em' }}>Bot Companion Preview</div>
-              
-              <div style={{ width: 140, height: 140, background: 'var(--bg1)', border: '1px solid var(--b1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px var(--gold-glow)' }}>
-                <AvatarFace size={110} showGlow />
-              </div>
-
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: 'var(--ff)', fontSize: 16, fontWeight: 700, color: 'var(--gold)' }}>{settings.avatarName}</div>
-                <div style={{ fontSize: 11, color: 'var(--t3)', textTransform: 'capitalize', marginTop: 2 }}>{settings.personality} Agent • {settings.voiceName} Voice</div>
-              </div>
+        <div style={configGrid}>
+          <form onSubmit={handleJoin} style={panel}>
+            <SectionTitle title="Room setup" sub="The AI companion works beside your call and can be shared into Zoom or Meet."/>
+            <label style={label}>Meeting URL or Room ID</label>
+            <input value={roomInput} onChange={e => setRoomInput(e.target.value)} placeholder="https://meet.google.com/... or team-daily-sync" style={input}/>
+            <div style={platformBadge(platform)}><span>{platform.short}</span>{platform.name}</div>
+            <div style={settingsGrid}>
+              <Info label="Agent" value={`${settings.avatarName} (${settings.avatarGender || 'female'})`}/>
+              <Info label="Voice" value={settings.voiceName || 'Browser default'}/>
+              <Info label="Provider" value={settings.activeProvider || 'anthropic'}/>
+              <Info label="Mode" value={settings.personality || 'friendly'}/>
             </div>
-          </div>
+            {mediaError && <div style={warning}>{mediaError}</div>}
+            <button type="submit" className="gold-glow-btn" style={primaryBtn}>Join Room</button>
+          </form>
 
-          {/* History */}
-          {recentMeetings.length > 0 && (
-            <div style={{ background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 16, padding: 20 }}>
-              <div style={{ fontFamily: 'var(--ff)', fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Recent Room Logs</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {recentMeetings.map((m) => (
-                  <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg1)', border: '1px solid var(--b1)', borderRadius: 10, padding: '10px 16px', fontSize: 12 }}>
-                    <div>
-                      <strong style={{ color: 'var(--gold)' }}>{m.roomName}</strong>
-                      <span style={{ color: 'var(--t3)', marginLeft: 8 }}>({m.date})</span>
-                    </div>
-                    <div style={{ color: 'var(--t2)' }}>
-                      <span>⏱ {m.duration}</span>
-                      <span style={{ marginLeft: 12 }}>💬 {m.transcriptLength} lines</span>
-                    </div>
+          <section style={panel}>
+            <SectionTitle title="Recent meetings" sub="Local meeting history from this browser."/>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {recentMeetings.length === 0 && <div style={emptyBox}>No recent meetings yet.</div>}
+              {recentMeetings.slice(0, 6).map(m => (
+                <div key={m.id} style={recentRow}>
+                  <div>
+                    <div style={{ fontWeight: 800 }}>{m.roomName}</div>
+                    <div style={muted}>{m.platform || 'MEZOMAI Room'} - {m.date}</div>
                   </div>
-                ))}
-              </div>
+                  <div style={{ color: 'var(--gold)', fontFamily: 'var(--ff-mono)', fontSize: 11 }}>{m.duration}</div>
+                </div>
+              ))}
             </div>
-          )}
+          </section>
         </div>
       </div>
     )
   }
 
-  // RENDER IN CALL VIEW
   if (meetingState === 'incall') {
     return (
-      <div style={{ flex: 1, display: 'flex', height: '100%' }} className="fade-in">
-        {/* Main call grid */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#080603', position: 'relative' }}>
-          {/* Header info */}
-          <div style={{ padding: '16px 24px', display: 'flex', justifyItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--b1)', background: 'var(--bg1)' }}>
+      <div style={callPage} className="fade-in">
+        <main style={callMain}>
+          <header style={callHeader}>
             <div>
-              <span style={{ fontFamily: 'var(--ff)', fontWeight: 800, fontSize: 16, color: 'var(--gold)' }}>Room: {activeRoom}</span>
-              <span style={{ fontSize: 11, color: 'var(--t3)', marginLeft: 10 }}>• Encrypted Live Session</span>
+              <div style={eyebrow}>Live meeting</div>
+              <h1 style={callTitle}>{activeRoom}</h1>
             </div>
-            <div style={{ fontFamily: 'var(--fm)', color: 'var(--green)', background: 'rgba(0, 230, 118, 0.1)', padding: '4px 10px', borderRadius: 6, fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', display: 'inline-block' }}/>
-              {formatTime(inCallDuration)}
-            </div>
-          </div>
+            <div style={timerBadge}><span style={liveDot}/>{formatTime(duration)}</div>
+          </header>
 
-          {/* Videos Grid */}
-          <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, padding: 24, contentVisibility: 'auto' }}>
-            {/* User stream */}
-            <div style={{ background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 16, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {isVideoOff ? (
-                <div style={{ fontSize: 13, color: 'var(--t3)' }}>🎥 Camera Off</div>
+          <section style={videoGrid}>
+            <div style={tile}>
+              {cameraOff ? (
+                <div style={cameraOffBox}>Camera Off</div>
               ) : (
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ width: 80, height: 80, background: 'var(--bg1)', border: '1px solid var(--b1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                    👤
-                  </div>
-                  <div style={{ fontSize: 13, color: 'var(--t1)', fontWeight: 600 }}>Local Host (You)</div>
-                </div>
+                <video ref={videoRef} autoPlay muted playsInline style={video}/>
               )}
-              <div style={{ position: 'absolute', bottom: 12, left: 12, background: 'rgba(0,0,0,0.6)', padding: '4px 10px', borderRadius: 6, fontSize: 11, color: '#fff' }}>
-                {isMuted ? '🔇 Muted' : '🎙️ Microphone Active'}
-              </div>
+              <div style={tileLabel}>{muted ? 'Muted' : 'Microphone active'}</div>
             </div>
+            <div style={tile}>
+              <AvatarFace size={190}/>
+              <div style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 800 }}>{settings.avatarName}</div>
+              <div style={tileLabel}>AI companion - {settings.avatarGender || 'female'}</div>
+            </div>
+          </section>
 
-            {/* AI Agent Stream */}
-            <div style={{ background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 16, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-              <div style={{ width: 150, height: 150, background: 'var(--bg1)', border: '1px solid var(--b1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 30px var(--gold-glow)' }}>
-                <AvatarFace size={120} showGlow />
-              </div>
-              <div style={{ fontFamily: 'var(--ff)', fontSize: 15, fontWeight: 700, color: 'var(--gold)' }}>
-                {settings.avatarName} (AI Companion)
-              </div>
-              <div style={{ position: 'absolute', bottom: 12, left: 12, background: 'rgba(0,0,0,0.6)', padding: '4px 10px', borderRadius: 6, fontSize: 11, color: '#fff' }}>
-                🔊 Speaker Mode Active
-              </div>
+          <div style={controls}>
+            <button onClick={() => setMuted(v => !v)} style={controlBtn(muted)}>{muted ? 'Unmute' : 'Mute'}</button>
+            <button onClick={() => setCameraOff(v => !v)} style={controlBtn(cameraOff)}>{cameraOff ? 'Camera On' : 'Camera Off'}</button>
+            <button onClick={listening ? stopSpeechRecognition : startSpeechRecognition} style={controlBtn(listening)}>{listening ? 'Stop Transcript' : 'Start Transcript'}</button>
+            <button onClick={handleLeave} style={leaveBtn}>Leave</button>
+          </div>
+        </main>
+
+        <aside style={side}>
+          <div style={sideSection}>
+            <SectionTitle title="Live transcript" sub="SpeechRecognition lines and AI responses."/>
+            <div style={transcriptBox}>
+              {transcript.map((line, index) => (
+                <div key={index} style={lineBox(line.speaker === settings.avatarName)}>
+                  <div style={lineMeta}><strong>{line.speaker}</strong><span>{line.time}</span></div>
+                  <div>{line.text}</div>
+                </div>
+              ))}
+              <div ref={transcriptEndRef}/>
             </div>
           </div>
 
-          {/* Controls Bar */}
-          <div style={{ padding: '20px', display: 'flex', justifyContent: 'center', gap: 12, borderTop: '1px solid var(--b1)', background: 'var(--bg1)' }}>
-            <button onClick={() => setIsMuted(!isMuted)} style={{ background: isMuted ? 'var(--red)' : 'var(--bg3)', border: '1px solid var(--b1)', borderRadius: 10, padding: '10px 18px', color: isMuted ? '#fff' : 'var(--t1)', fontSize: 12 }}>
-              {isMuted ? '🎙️ Unmute' : '🔇 Mute'}
-            </button>
-            <button onClick={() => setIsVideoOff(!isVideoOff)} style={{ background: isVideoOff ? 'var(--red)' : 'var(--bg3)', border: '1px solid var(--b1)', borderRadius: 10, padding: '10px 18px', color: isVideoOff ? '#fff' : 'var(--t1)', fontSize: 12 }}>
-              {isVideoOff ? '📹 Video On' : '🚫 Stop Video'}
-            </button>
-            <button onClick={handleLeaveCall} style={{ background: 'var(--red)', border: 'none', borderRadius: 10, padding: '10px 24px', color: '#fff', fontSize: 12, fontWeight: 700 }}>
-              🔴 Leave Meeting
-            </button>
+          <div style={sideSection}>
+            <SectionTitle title="Tasks" sub="Capture action items during the call."/>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input value={taskInput} onChange={e => setTaskInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTask()} placeholder="Add task..." style={input}/>
+              <button onClick={addTask} style={smallBtn}>Add</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+              {tasks.map(task => (
+                <label key={task.id} style={taskRow}>
+                  <input type="checkbox" checked={task.done} onChange={() => setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done: !t.done } : t))}/>
+                  <span style={{ textDecoration: task.done ? 'line-through' : 'none' }}>{task.text}</span>
+                </label>
+              ))}
+            </div>
           </div>
-        </div>
-
-        {/* Sidebar Transcript */}
-        <div style={{ width: 360, borderLeft: '1px solid var(--b1)', background: 'var(--bg2)', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--b1)' }}>
-            <div style={{ fontFamily: 'var(--ff)', fontSize: 13, fontWeight: 800, color: 'var(--gold)', letterSpacing: '.06em', textTransform: 'uppercase' }}>Live Transcription</div>
-          </div>
-          <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {transcript.map((line, i) => (
-              <div key={i} style={{ background: line.speaker === 'System' ? 'transparent' : 'var(--bg1)', border: line.speaker === 'System' ? 'none' : '1px solid var(--b1)', borderRadius: 10, padding: '10px 12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 10 }}>
-                  <strong style={{ color: line.speaker === 'System' ? 'var(--t3)' : line.speaker === 'You' ? 'var(--t1)' : 'var(--gold)' }}>
-                    {line.speaker}
-                  </strong>
-                  <span style={{ color: 'var(--t3)' }}>{line.time}</span>
-                </div>
-                <div style={{ fontSize: 12, color: line.speaker === 'System' ? 'var(--t3)' : 'var(--t2)', fontStyle: line.speaker === 'System' ? 'italic' : 'normal', lineHeight: 1.4 }}>
-                  {line.text}
-                </div>
-              </div>
-            ))}
-            <div ref={transcriptEndRef} />
-          </div>
-        </div>
+        </aside>
       </div>
     )
   }
 
-  // RENDER POST CALL VIEW
-  if (meetingState === 'postcall') {
-    return (
-      <div style={{ flex: 1, overflowY: 'auto', padding: '32px' }} className="fade-in">
-        <div style={{ maxWidth: 680, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>📝</div>
-            <h1 style={{ fontFamily: 'var(--ff)', fontSize: 24, fontWeight: 800, color: 'var(--gold)' }}>Meeting Notes Generated</h1>
-            <p style={{ fontSize: 12, color: 'var(--t3)', marginTop: 4 }}>Call room: {activeRoom} • Duration: {formatTime(inCallDuration)}</p>
-          </div>
-
-          {meetingNotes ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {/* Summary */}
-              <div style={{ background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 14, padding: 20 }}>
-                <div style={sectionTitleStyle}>Executive Summary</div>
-                <p style={{ fontSize: 13, color: 'var(--t2)', lineHeight: 1.6 }}>{meetingNotes.summary}</p>
-              </div>
-
-              {/* Key points */}
-              <div style={{ background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 14, padding: 20 }}>
-                <div style={sectionTitleStyle}>Key Points Discussed</div>
-                <ul style={{ paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {meetingNotes.keyPoints.map((item, i) => (
-                    <li key={i} style={{ fontSize: 13, color: 'var(--t2)', lineHeight: 1.5 }}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Action Items */}
-              <div style={{ background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 14, padding: 20 }}>
-                <div style={sectionTitleStyle}>Action Items</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {meetingNotes.actionItems.map((item, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                      <input type="checkbox" style={{ marginTop: 3, accentColor: 'var(--gold)' }} defaultChecked={false} />
-                      <span style={{ fontSize: 13, color: 'var(--t2)', lineHeight: 1.4 }}>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
-                <button onClick={handleDownloadNotes} className="gold-glow-btn" style={{ flex: 1, padding: '12px 0', border: 'none', borderRadius: 10, fontSize: 13, cursor: 'pointer' }}>
-                  📥 Download Notes (.txt)
-                </button>
-                <button onClick={() => setMeetingState('configure')} style={{ flex: 1, padding: '12px 0', background: 'var(--bg3)', border: '1px solid var(--b1)', borderRadius: 10, fontSize: 13, color: 'var(--t1)', cursor: 'pointer' }}>
-                  🔄 Start New Meeting
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--t3)' }}>
-              🤖 Synthesizing notes with Claude... Please wait.
-            </div>
-          )}
+  return (
+    <div style={page} className="fade-in">
+      <div style={postShell}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={eyebrow}>Post call</div>
+          <h1 style={title}>Meeting notes generated</h1>
+          <p style={subcopy}>Room: {activeRoom} - Duration: {formatTime(duration)}</p>
+        </div>
+        {summaryLoading && <div style={emptyBox}>Generating notes...</div>}
+        {meetingNotes && (
+          <>
+            <NoteCard title="Summary">{meetingNotes.summary}</NoteCard>
+            <ListCard title="Key Points" items={meetingNotes.keyPoints}/>
+            <ListCard title="Action Items" items={meetingNotes.actionItems}/>
+          </>
+        )}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button onClick={() => downloadNotes(activeRoom, duration, meetingNotes)} className="gold-glow-btn" style={primaryBtn}>Download Notes</button>
+          <button onClick={() => setMeetingState('configure')} style={secondaryBtn}>New Meeting</button>
         </div>
       </div>
-    )
-  }
-
-  return null
+    </div>
+  )
 }
 
-const labelStyle = {
-  fontFamily: 'var(--fm)',
-  fontSize: 10,
-  color: 'var(--t3)',
-  letterSpacing: '.08em',
-  textTransform: 'uppercase',
-  display: 'block',
+function downloadNotes(room, duration, notes) {
+  if (!notes) return
+  const text = `MEZOMAI Meeting Notes\nRoom: ${room}\nDuration: ${duration}\n\nSummary:\n${notes.summary}\n\nKey Points:\n${notes.keyPoints.map((p, i) => `${i + 1}. ${p}`).join('\n')}\n\nAction Items:\n${notes.actionItems.map((a, i) => `${i + 1}. ${a}`).join('\n')}`
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }))
+  a.download = `meeting-notes-${Date.now()}.txt`
+  a.click()
 }
 
-const sectionTitleStyle = {
-  fontFamily: 'var(--ff)',
-  fontSize: 14,
-  fontWeight: 800,
-  color: 'var(--gold)',
-  marginBottom: 12,
-  letterSpacing: '.04em',
-  textTransform: 'uppercase',
+function SectionTitle({ title, sub }) {
+  return <div style={{ marginBottom: 14 }}><h2 style={sectionTitle}>{title}</h2><p style={sectionSub}>{sub}</p></div>
 }
+function Info({ label, value }) {
+  return <div style={infoBox}><div style={muted}>{label}</div><div style={{ fontWeight: 800 }}>{value}</div></div>
+}
+function NoteCard({ title, children }) {
+  return <section style={panel}><SectionTitle title={title} sub="Generated from the captured transcript."/><p style={{ lineHeight: 1.7, color: 'var(--t2)' }}>{children}</p></section>
+}
+function ListCard({ title, items }) {
+  return <section style={panel}><SectionTitle title={title} sub="Review before sharing."/><ul style={{ paddingLeft: 18, lineHeight: 1.7, color: 'var(--t2)' }}>{items.map((item, i) => <li key={i}>{item}</li>)}</ul></section>
+}
+
+const page = { flex: 1, overflowY: 'auto', padding: 28 }
+const hero = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, background: 'var(--bg1)', border: '1px solid var(--b1)', borderRadius: 18, padding: 26, boxShadow: '0 24px 70px rgba(15,23,42,.12)', marginBottom: 18 }
+const eyebrow = { fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '.14em' }
+const title = { fontFamily: 'var(--ff-display)', fontSize: 32, fontWeight: 800, marginTop: 6 }
+const subcopy = { color: 'var(--t3)', lineHeight: 1.6, maxWidth: 720, marginTop: 8 }
+const configGrid = { display: 'grid', gridTemplateColumns: 'minmax(0,1.1fr) minmax(320px,.9fr)', gap: 16 }
+const panel = { background: 'var(--bg1)', border: '1px solid var(--b1)', borderRadius: 16, padding: 20, boxShadow: '0 18px 46px rgba(15,23,42,.08)' }
+const sectionTitle = { fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 800 }
+const sectionSub = { fontSize: 12, color: 'var(--t3)', marginTop: 4, lineHeight: 1.5 }
+const label = { display: 'block', fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--t3)', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 7 }
+const input = { width: '100%', background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 10, color: 'var(--t1)', padding: '10px 12px', minWidth: 0 }
+const platformBadge = (platform) => ({ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 9, background: 'var(--bg2)', border: `1px solid ${platform.color}`, borderRadius: 999, padding: '8px 12px', color: 'var(--t2)', fontWeight: 800 })
+const settingsGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 16 }
+const infoBox = { background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 12, padding: 12 }
+const muted = { fontSize: 11, color: 'var(--t3)' }
+const warning = { marginTop: 12, background: 'rgba(217,119,6,.1)', border: '1px solid rgba(217,119,6,.25)', color: 'var(--amber)', borderRadius: 10, padding: 12, fontSize: 12 }
+const primaryBtn = { border: 'none', padding: '12px 16px', fontWeight: 800, marginTop: 18 }
+const secondaryBtn = { background: 'var(--bg2)', border: '1px solid var(--b1)', color: 'var(--t2)', padding: '12px 16px', fontWeight: 800, flex: 1 }
+const emptyBox = { background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 12, padding: 16, color: 'var(--t3)', textAlign: 'center' }
+const recentRow = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 12, padding: 12 }
+const callPage = { flex: 1, display: 'flex', overflow: 'hidden', gap: 16, padding: 16 }
+const callMain = { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: '#0b1020', border: '1px solid var(--b1)', borderRadius: 18, overflow: 'hidden', boxShadow: '0 24px 70px rgba(15,23,42,.16)' }
+const callHeader = { height: 78, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 22px', borderBottom: '1px solid rgba(255,255,255,.08)' }
+const callTitle = { fontFamily: 'var(--ff-display)', color: '#fff', fontSize: 20, fontWeight: 800, marginTop: 4 }
+const timerBadge = { display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(22,163,74,.12)', border: '1px solid rgba(74,222,128,.35)', color: '#86efac', borderRadius: 999, padding: '8px 12px', fontFamily: 'var(--ff-mono)', fontWeight: 800 }
+const liveDot = { width: 8, height: 8, borderRadius: '50%', background: '#ef4444', boxShadow: '0 0 12px #ef4444' }
+const videoGrid = { flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, padding: 18 }
+const tile = { position: 'relative', background: 'linear-gradient(145deg,#111827,#020617)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 18, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 14, color: '#fff' }
+const video = { width: '100%', height: '100%', objectFit: 'cover' }
+const cameraOffBox = { width: 112, height: 112, borderRadius: '50%', background: 'rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1' }
+const tileLabel = { position: 'absolute', left: 14, bottom: 14, background: 'rgba(0,0,0,.55)', color: '#fff', borderRadius: 999, padding: '7px 11px', fontSize: 12 }
+const controls = { height: 76, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, borderTop: '1px solid rgba(255,255,255,.08)' }
+const controlBtn = (active) => ({ background: active ? 'var(--gold)' : 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.16)', color: '#fff', padding: '11px 15px', fontWeight: 800 })
+const leaveBtn = { background: '#dc2626', border: 'none', color: '#fff', padding: '11px 18px', fontWeight: 800 }
+const side = { width: 390, display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto' }
+const sideSection = { background: 'var(--bg1)', border: '1px solid var(--b1)', borderRadius: 16, padding: 16, minHeight: 0 }
+const transcriptBox = { height: 390, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }
+const lineBox = (ai) => ({ background: ai ? 'var(--gold-light)' : 'var(--bg2)', border: `1px solid ${ai ? 'var(--gold)' : 'var(--b1)'}`, borderRadius: 12, padding: 11, color: 'var(--t2)', lineHeight: 1.5 })
+const lineMeta = { display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--t3)', marginBottom: 5 }
+const smallBtn = { background: 'var(--bg2)', border: '1px solid var(--b1)', color: 'var(--t2)', padding: '10px 12px', fontWeight: 800 }
+const taskRow = { display: 'flex', alignItems: 'flex-start', gap: 8, background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 10, padding: 10, color: 'var(--t2)', fontSize: 12 }
+const postShell = { maxWidth: 820, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }
