@@ -8,22 +8,29 @@ const SECRET_FIELDS = [
   ['dailyKey', 'daily'],
 ]
 
-const profileToUser = (profile = {}, authUser = {}) => ({
-  id: profile.id || authUser.id,
-  uuid: profile.id || authUser.id,
-  username: profile.username || authUser.user_metadata?.username || authUser.email?.split('@')[0] || 'Operator',
-  email: profile.email || authUser.email,
-  avatar_name: profile.avatar_name || 'ARIA',
-  avatar_style: profile.avatar_style || 'gold',
-  avatar_gender: profile.avatar_gender || 'female',
-  personality: profile.personality || 'friendly',
-  system_prompt: profile.system_prompt,
-  voice_name: profile.voice_name || 'Rachel',
-  voice_speed: profile.voice_speed || 1,
-  voice_pitch: profile.voice_pitch || 1,
-  model: profile.model || 'claude-3-5-sonnet-20241022',
-  active_provider: profile.active_provider || 'anthropic',
-})
+const profileToUser = (profile, authUser) => {
+  const safeProfile = profile || {}
+  const safeAuthUser = authUser || {}
+  const id = safeProfile.id || safeAuthUser.id
+  if (!id) throw new Error('Supabase did not return a signed-in user. Check email confirmation or try signing in again.')
+
+  return {
+    id,
+    uuid: id,
+    username: safeProfile.username || safeAuthUser.user_metadata?.username || safeAuthUser.email?.split('@')[0] || 'Operator',
+    email: safeProfile.email || safeAuthUser.email,
+    avatar_name: safeProfile.avatar_name || 'ARIA',
+    avatar_style: safeProfile.avatar_style || 'gold',
+    avatar_gender: safeProfile.avatar_gender || 'female',
+    personality: safeProfile.personality || 'friendly',
+    system_prompt: safeProfile.system_prompt,
+    voice_name: safeProfile.voice_name || 'Rachel',
+    voice_speed: safeProfile.voice_speed || 1,
+    voice_pitch: safeProfile.voice_pitch || 1,
+    model: safeProfile.model || 'claude-3-5-sonnet-20241022',
+    active_provider: safeProfile.active_provider || 'anthropic',
+  }
+}
 
 const userToProfile = (userId, email, settings = {}) => ({
   id: userId,
@@ -75,6 +82,7 @@ export async function supabaseLogin(email, password) {
   if (!isSupabaseConfigured || !supabase) throw new Error('Supabase is not configured.')
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) throw error
+  if (!data?.user || !data?.session) throw new Error('Supabase login did not return a session. Confirm your email, then sign in again.')
   const profile = await getSupabaseProfile(data.user)
   return {
     token: `supabase:${data.session.access_token}`,
@@ -90,6 +98,12 @@ export async function supabaseRegister({ email, password, username }) {
     options: { data: { username } },
   })
   if (error) throw error
+  if (!data?.user) {
+    throw new Error('Supabase did not create a user. Check Auth settings and try again.')
+  }
+  if (!data?.session) {
+    throw new Error('Registration created the account, but Supabase requires email confirmation before login. Confirm the email, then sign in.')
+  }
   if (data.user && data.session) {
     await upsertSupabaseProfile({
       username: username || data.user.email?.split('@')[0],
@@ -101,7 +115,7 @@ export async function supabaseRegister({ email, password, username }) {
       activeProvider: 'anthropic',
     })
   }
-  const sessionToken = data.session?.access_token ? `supabase:${data.session.access_token}` : null
+  const sessionToken = `supabase:${data.session.access_token}`
   return {
     token: sessionToken,
     user: profileToUser(await getSupabaseProfile(data.user), data.user),
