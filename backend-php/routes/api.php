@@ -7,6 +7,7 @@ use App\Http\Controllers\CodeController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\MailController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,4 +40,5 @@ Route::middleware('auth.jwt')->group(function () {
     Route::get('/analytics', [AnalyticsController::class, 'getStats']);
     Route::get('/settings', [SettingsController::class, 'getSettings']);
     Route::post('/settings', [SettingsController::class, 'saveSettings']);
+    Route::post('/mail/send', [MailController::class, 'send']);
 });
