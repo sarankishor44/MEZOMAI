@@ -16,6 +16,11 @@ Set these in Vercel Project Settings -> Environment Variables:
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 VITE_DEMO_MODE=false
+VITE_SENTRY_DSN=https://090fb32f2a0d83e7dad226626d9cc8f4@o4511444565032960.ingest.de.sentry.io/4511444580499536
+VITE_SENTRY_SEND_DEFAULT_PII=false
+VITE_SENTRY_TRACES_SAMPLE_RATE=0.2
+VITE_SENTRY_REPLAY_SAMPLE_RATE=0.1
+VITE_SENTRY_REPLAY_ERROR_SAMPLE_RATE=1.0
 ```
 
 Optional, if the PHP and Python APIs are deployed separately:

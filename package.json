@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.0",
+    "@sentry/react": "^10.53.1",
     "@supabase/supabase-js": "^2.106.1",
     "axios": "^1.7.3",
     "lucide-react": "^0.383.0",
