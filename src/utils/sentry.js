@@ -21,6 +21,23 @@ if (isEnabled) {
     replaysOnErrorSampleRate: Number(import.meta.env.VITE_SENTRY_REPLAY_ERROR_SAMPLE_RATE ?? 1.0),
     enableLogs: true,
     environment: import.meta.env.MODE,
+    ignoreErrors: [
+      "Object [object Object] has no method 'updateFrom'",
+      'ResizeObserver loop completed with undelivered notifications.',
+      'ResizeObserver loop limit exceeded',
+    ],
+    beforeSend(event) {
+      const values = event.exception?.values || []
+      const stackFrames = values.flatMap(value => value.stacktrace?.frames || [])
+      const hasSentryInjectedFrame = stackFrames.some(frame =>
+        String(frame.filename || '').includes('/sentry/scripts/views.js') ||
+        String(frame.filename || '').includes('../../sentry/scripts/views.js')
+      )
+
+      if (hasSentryInjectedFrame) return null
+
+      return event
+    },
   })
 }
 
