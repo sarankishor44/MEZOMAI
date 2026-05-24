@@ -23,11 +23,14 @@ phpApi.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('aria_token')
-      localStorage.removeItem('aria_user')
-      // Only redirect if not already on login
-      if (!window.location.pathname.includes('/login') && window.location.pathname !== '/') {
-        window.location.href = '/'
+      const token = localStorage.getItem('aria_token') || ''
+      if (!token.startsWith('supabase:')) {
+        localStorage.removeItem('aria_token')
+        localStorage.removeItem('aria_user')
+        // Only redirect if not already on login
+        if (!window.location.pathname.includes('/login') && window.location.pathname !== '/') {
+          window.location.href = '/'
+        }
       }
     }
     return Promise.reject(err)

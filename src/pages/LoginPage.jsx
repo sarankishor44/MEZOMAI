@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { useStore } from '../store'
 import { phpApi } from '../utils/api'
+import { isSupabaseConfigured } from '../utils/supabase'
+import { supabaseLogin, supabaseRegister } from '../utils/supabaseBackend'
 
 export default function LoginPage() {
   const { setToken, setUser, updateSettings, theme, toggleTheme } = useStore()
@@ -14,13 +16,38 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
     setDemoNotice(false)
+    const loginId = (form.email || form.username || '').trim()
+    if (mode === 'login' && loginId.toLowerCase() === 'demo' && form.password === 'demo') {
+      loginDemoUser()
+      return
+    }
     try {
       const endpoint = mode === 'login' ? '/auth/login' : '/auth/register'
       const { data } = await phpApi.post(endpoint, form)
+      if (!data?.token || !data?.user) throw new Error('PHP auth endpoint did not return a session.')
       setToken(data.token)
       setUser(data.user)
       updateSettings(userToSettings(data.user))
     } catch (e) {
+      if (isSupabaseConfigured) {
+        try {
+          const authEmail = form.email.trim()
+          if (!authEmail.includes('@')) throw new Error('Use an email address for Supabase login, or use demo / demo.')
+          const data = mode === 'login'
+            ? await supabaseLogin(authEmail, form.password)
+            : await supabaseRegister({ email: authEmail, password: form.password, username: form.username })
+          if (!data.token) throw new Error('Check your email to confirm the Supabase account before signing in.')
+          setToken(data.token)
+          setUser(data.user)
+          updateSettings(userToSettings(data.user))
+          setLoading(false)
+          return
+        } catch (supabaseError) {
+          setError(supabaseError.message || 'Supabase authentication failed.')
+          setLoading(false)
+          return
+        }
+      }
       const demoAllowed = import.meta.env.VITE_DEMO_MODE === 'true' || import.meta.env.DEV
       if (!demoAllowed) {
         setError(e.response?.data?.error || 'Login failed. Check backend and credentials.')
@@ -30,20 +57,27 @@ export default function LoginPage() {
       console.warn('REST authentication failed. Demo mode is enabled locally.', e)
       setDemoNotice(true)
       setTimeout(() => {
-        const mockUser = {
-          username: form.username || form.email.split('@')[0] || 'Operator',
-          email: form.email || 'operator@mezomai.com',
-          avatar_name: 'ARIA',
-          avatar_style: 'gold',
-          personality: 'friendly',
-          model: 'claude-3-5-sonnet-20241022',
-        }
-        setToken('demo_session_token_xyz')
-        setUser(mockUser)
-        updateSettings(userToSettings(mockUser))
-        setLoading(false)
+        loginDemoUser(form.username || form.email.split('@')[0] || 'Operator', form.email || 'operator@mezomai.com')
       }, 700)
     }
+  }
+
+  const loginDemoUser = (username = 'demo', email = 'demo@mezomai.local') => {
+    const mockUser = {
+      username,
+      email,
+      avatar_name: 'ARIA',
+      avatar_style: 'gold',
+      avatar_gender: 'female',
+      personality: 'friendly',
+      model: 'claude-3-5-sonnet-20241022',
+      active_provider: 'anthropic',
+    }
+    setToken('demo_session_token_xyz')
+    setUser(mockUser)
+    updateSettings(userToSettings(mockUser))
+    setDemoNotice(username === 'demo')
+    setLoading(false)
   }
 
   return (
@@ -77,7 +111,7 @@ export default function LoginPage() {
           {mode === 'register' && (
             <input placeholder="Username" value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} style={inputStyle}/>
           )}
-          <input placeholder="Email" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} style={inputStyle}/>
+          <input placeholder={mode === 'login' ? 'Email or demo' : 'Email'} type={mode === 'login' ? 'text' : 'email'} value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} style={inputStyle}/>
           <input
             placeholder="Password"
             type="password"
@@ -89,14 +123,14 @@ export default function LoginPage() {
         </div>
 
         {error && <div style={{ marginTop: 12, fontSize: 12, color: 'var(--red)', fontFamily: 'var(--ff-mono)' }}>{error}</div>}
-        {demoNotice && <div style={noticeStyle}>Backend unavailable. Opening local demo workspace because demo mode is enabled.</div>}
+        {demoNotice && <div style={noticeStyle}>Demo workspace opened. Demo ID: demo, password: demo.</div>}
 
         <button onClick={submit} disabled={loading} className="gold-glow-btn" style={submitBtn}>
           {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
         </button>
 
         <p style={helpText}>
-          Demo fallback works only when `VITE_DEMO_MODE=true` or during local development.
+          Supabase works on Vercel when `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set. Demo ID: `demo`, password: `demo`.
         </p>
       </section>
     </div>

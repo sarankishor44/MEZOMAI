@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
 import { phpApi } from '../utils/api'
+import { isSupabaseConfigured } from '../utils/supabase'
+import { loadSupabaseSettings, saveSupabaseSettings, signOutSupabase } from '../utils/supabaseBackend'
 
 const API_FIELDS = [
   { key: 'apiKey', provider: 'Anthropic', placeholder: 'sk-ant-api03-...', models: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'] },
@@ -34,9 +36,18 @@ export default function SettingsPage() {
   const loadSettings = async () => {
     try {
       const { data } = await phpApi.get('/settings')
+      if (!data?.settings) throw new Error('PHP settings endpoint did not return settings.')
       updateSettings(data.settings)
       setDbStatus('Loaded from DB')
     } catch {
+      if (isSupabaseConfigured) {
+        try {
+          const data = await loadSupabaseSettings()
+          updateSettings(data)
+          setDbStatus('Loaded from Supabase')
+          return
+        } catch {}
+      }
       setDbStatus('Local settings')
     }
   }
@@ -63,6 +74,16 @@ export default function SettingsPage() {
       })
       setDbStatus('Saved to DB')
     } catch (e) {
+      if (isSupabaseConfigured) {
+        try {
+          await saveSupabaseSettings(settings)
+          setDbStatus('Saved to Supabase')
+          return
+        } catch (supabaseError) {
+          setDbStatus(supabaseError.message || 'Supabase save failed')
+          return
+        }
+      }
       setDbStatus(e.response?.data?.message || 'DB save failed')
     } finally {
       setSaving(false)
@@ -102,6 +123,11 @@ export default function SettingsPage() {
     speechSynthesis.speak(utter)
   }
 
+  const signOut = async () => {
+    if (isSupabaseConfigured) await signOutSupabase()
+    logout()
+  }
+
   return (
     <div style={page} className="fade-in">
       <div style={header}>
@@ -111,14 +137,14 @@ export default function SettingsPage() {
           <div style={hint}>{dbStatus}</div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={saveSettings} disabled={saving} className="gold-glow-btn" style={{ ...primaryBtn, marginTop: 0 }}>{saving ? 'Saving...' : 'Save to DB'}</button>
-          <button onClick={logout} style={dangerBtn}>Sign Out</button>
+          <button onClick={saveSettings} disabled={saving} className="gold-glow-btn" style={{ ...primaryBtn, marginTop: 0 }}>{saving ? 'Saving...' : 'Save Settings'}</button>
+          <button onClick={signOut} style={dangerBtn}>Sign Out</button>
         </div>
       </div>
 
       <div style={grid}>
         <section style={panel}>
-          <SectionTitle title="Multiple API Providers" sub="Store provider keys locally and send them to backend settings when available."/>
+          <SectionTitle title="Multiple API Providers" sub="Store provider keys for the signed-in backend user when PHP or Supabase is available."/>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {API_FIELDS.map(field => (
               <div key={field.key} style={apiRow}>

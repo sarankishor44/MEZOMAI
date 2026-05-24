@@ -2,6 +2,13 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
 import { phpApi, pyApi } from '../utils/api'
+import { isSupabaseConfigured } from '../utils/supabase'
+import {
+  createSupabaseChatSession,
+  listSupabaseChatSessions,
+  loadSupabaseMessages,
+  saveSupabaseMessage,
+} from '../utils/supabaseBackend'
 
 const MODES = ['Friendly', 'Developer', 'Coach', 'Professional']
 const PROMPTS = ['Review this idea', 'Draft a release note', 'Explain the code', 'Create meeting agenda']
@@ -54,6 +61,17 @@ export default function ChatPage() {
       }
       setSyncState('Synced with PHP')
     } catch {
+      if (isSupabaseConfigured) {
+        try {
+          const normalized = await listSupabaseChatSessions()
+          setSessions(normalized.length ? normalized : sessions)
+          if (normalized.length && activeSession === 'default') {
+            setActiveSession(normalized[0].uuid)
+          }
+          setSyncState('Synced with Supabase')
+          return
+        } catch {}
+      }
       setSyncState('Local mode')
     }
   }
@@ -65,11 +83,24 @@ export default function ChatPage() {
         title: input.trim().slice(0, 60) || 'New Chat',
         personality: selectedMode.toLowerCase(),
       })
+      if (!data?.uuid) throw new Error('PHP chat endpoint did not return a session.')
       const session = { ...data, id: data.uuid }
       addSession(session)
       setActiveSession(data.uuid)
       return data.uuid
     } catch {
+      if (isSupabaseConfigured) {
+        try {
+          const session = await createSupabaseChatSession({
+            title: input.trim().slice(0, 60) || 'New Chat',
+            personality: selectedMode.toLowerCase(),
+          })
+          addSession(session)
+          setActiveSession(session.uuid)
+          setSyncState('Created in Supabase')
+          return session.uuid
+        } catch {}
+      }
       return 'default'
     }
   }
@@ -80,6 +111,14 @@ export default function ChatPage() {
       setMessages(data.map(toUiMessage))
       setSyncState('Messages loaded from PHP')
     } catch {
+      if (isSupabaseConfigured) {
+        try {
+          const data = await loadSupabaseMessages(sessionUuid)
+          setMessages(data.map(toUiMessage))
+          setSyncState('Messages loaded from Supabase')
+          return
+        } catch {}
+      }
       setSyncState('Using local messages')
     }
   }
@@ -92,9 +131,17 @@ export default function ChatPage() {
         content: message.content,
         token_count: Math.ceil((message.content || '').length / 4),
       })
+      if (!data?.role) throw new Error('PHP chat endpoint did not return a message.')
       setSyncState('Saved')
       return toUiMessage(data)
     } catch {
+      if (isSupabaseConfigured) {
+        try {
+          const data = await saveSupabaseMessage(sessionUuid, message)
+          setSyncState('Saved to Supabase')
+          return toUiMessage(data)
+        } catch {}
+      }
       setSyncState('Save failed: local only')
       return null
     }
@@ -166,10 +213,23 @@ export default function ChatPage() {
         title: 'New Chat',
         personality: selectedMode.toLowerCase(),
       })
+      if (!data?.uuid) throw new Error('PHP chat endpoint did not return a session.')
       const session = { ...data, id: data.uuid }
       addSession(session)
       setActiveSession(data.uuid)
     } catch {
+      if (isSupabaseConfigured) {
+        try {
+          const session = await createSupabaseChatSession({
+            title: 'New Chat',
+            personality: selectedMode.toLowerCase(),
+          })
+          addSession(session)
+          setActiveSession(session.uuid)
+          setSyncState('Created in Supabase')
+          return
+        } catch {}
+      }
       setActiveSession('default')
     }
   }
@@ -199,7 +259,7 @@ export default function ChatPage() {
       <section style={chatShell}>
         <header style={header}>
           <div>
-            <div style={eyebrow}>PHP-backed chat</div>
+            <div style={eyebrow}>Backend-backed chat</div>
             <h1 style={title}>Chat with {settings.avatarName}</h1>
           </div>
           <span style={badge}>{syncState}</span>
@@ -214,7 +274,7 @@ export default function ChatPage() {
             <div style={emptyState}>
               <div style={emptyOrb}>AI</div>
               <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 22 }}>What should we work on?</h2>
-              <p style={{ color: 'var(--t3)', maxWidth: 520, lineHeight: 1.6 }}>Messages are saved through PHP when the backend is available, so refresh keeps your chat.</p>
+              <p style={{ color: 'var(--t3)', maxWidth: 520, lineHeight: 1.6 }}>Messages are saved through PHP locally or Supabase on Vercel, so refresh keeps your chat.</p>
             </div>
           )}
           {messages.map(msg => <MessageBubble key={msg.id} msg={msg} avatarName={settings.avatarName}/>)}
