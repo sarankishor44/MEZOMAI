@@ -11,8 +11,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [demoNotice, setDemoNotice] = useState(false)
+  const [registerCooldownUntil, setRegisterCooldownUntil] = useState(0)
 
   const submit = async () => {
+    if (mode === 'register' && Date.now() < registerCooldownUntil) {
+      setError('Supabase email limit is cooling down. Wait a few minutes, or enable Resend SMTP in Supabase Auth.')
+      return
+    }
     setLoading(true)
     setError('')
     setDemoNotice(false)
@@ -43,7 +48,9 @@ export default function LoginPage() {
           setLoading(false)
           return
         } catch (supabaseError) {
-          setError(supabaseError.message || 'Supabase authentication failed.')
+          const message = formatSupabaseAuthError(supabaseError)
+          if (message.includes('email limit')) setRegisterCooldownUntil(Date.now() + 5 * 60 * 1000)
+          setError(message)
           setLoading(false)
           return
         }
@@ -135,6 +142,21 @@ export default function LoginPage() {
       </section>
     </div>
   )
+}
+
+function formatSupabaseAuthError(error) {
+  const raw = error?.message || 'Supabase authentication failed.'
+  const lower = raw.toLowerCase()
+  if (lower.includes('email rate limit')) {
+    return 'Supabase email limit exceeded. Wait a few minutes, or connect Resend as custom SMTP in Supabase Auth.'
+  }
+  if (lower.includes('signup is disabled')) {
+    return 'Signup is disabled in Supabase Auth settings.'
+  }
+  if (lower.includes('email not confirmed') || lower.includes('confirm')) {
+    return raw
+  }
+  return raw
 }
 
 function userToSettings(user = {}) {
