@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import { useStore } from './store'
 import Sidebar from './components/layout/Sidebar'
 import DashboardPage from './pages/DashboardPage'
@@ -55,21 +56,29 @@ export default function App() {
 
   // Login Gate
   if (!token) {
-    return <LoginPage />
+    return (
+      <>
+        <LoginPage />
+        <Analytics />
+      </>
+    )
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: 'var(--bg)' }}>
-      <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(v => !v)} />
-      <main style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-        {page === 'dashboard'  && <DashboardPage />}
-        {page === 'chat'       && <ChatPage />}
-        {page === 'code'       && <CodePage />}
-        {page === 'meetings'   && <MeetingsPage />}
-        {page === 'analytics'  && <AnalyticsPage />}
-        {page === 'settings'   && <SettingsPage />}
-      </main>
-    </div>
+    <>
+      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: 'var(--bg)' }}>
+        <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(v => !v)} />
+        <main style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+          {page === 'dashboard'  && <DashboardPage />}
+          {page === 'chat'       && <ChatPage />}
+          {page === 'code'       && <CodePage />}
+          {page === 'meetings'   && <MeetingsPage />}
+          {page === 'analytics'  && <AnalyticsPage />}
+          {page === 'settings'   && <SettingsPage />}
+        </main>
+      </div>
+      <Analytics />
+    </>
   )
 }
 
