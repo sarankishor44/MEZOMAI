@@ -11,6 +11,7 @@ import LoginPage from './pages/LoginPage'
 import { phpApi } from './utils/api'
 import { isSupabaseConfigured } from './utils/supabase'
 import { hydrateSupabaseAuth } from './utils/supabaseBackend'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 
 export default function App() {
   const { page, token, theme, setUser, updateSettings } = useStore()
@@ -69,6 +70,7 @@ export default function App() {
         {page === 'analytics'  && <AnalyticsPage />}
         {page === 'settings'   && <SettingsPage />}
       </main>
+      <SpeedInsights />
     </div>
   )
 }
