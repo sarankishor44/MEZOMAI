@@ -8,6 +8,12 @@ const getPyBase = () => {
   return localStorage.getItem('aria_py_api_url') || import.meta.env.VITE_PYTHON_API || '/ai'
 }
 
+const getPyRestBase = () => {
+  const base = getPyBase().replace(/\/$/, '')
+  if (base === '/ai' || base.endsWith('/ai')) return base
+  return `${base}/ai`
+}
+
 // ── PHP Laravel REST API ──────────────────────────────────────
 export const phpApi = axios.create({
   get baseURL() { return getPhpBase() }
@@ -39,7 +45,7 @@ phpApi.interceptors.response.use(
 
 // ── Python FastAPI ────────────────────────────────────────────
 export const pyApi = axios.create({
-  get baseURL() { return getPyBase() }
+  get baseURL() { return getPyRestBase() }
 })
 
 pyApi.interceptors.request.use((config) => {

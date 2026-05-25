@@ -7,6 +7,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
+          react: ['react', 'react-dom'],
+          charts: ['recharts'],
+          supabase: ['@supabase/supabase-js'],
           sentry: ['@sentry/react'],
         },
       },

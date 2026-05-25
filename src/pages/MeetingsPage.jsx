@@ -40,6 +40,7 @@ export default function MeetingsPage() {
   const [listening, setListening] = useState(false)
   const [mediaError, setMediaError] = useState('')
   const [summaryLoading, setSummaryLoading] = useState(false)
+  const [botJoinStatus, setBotJoinStatus] = useState('')
 
   const videoRef = useRef(null)
   const streamRef = useRef(null)
@@ -162,6 +163,31 @@ export default function MeetingsPage() {
     timerRef.current = window.setInterval(() => setDuration(v => v + 1), 1000)
   }
 
+  const handleInviteExternalBot = async () => {
+    const meetingUrl = roomInput.trim()
+    if (!meetingUrl.startsWith('http')) {
+      setBotJoinStatus('Paste a Google Meet, Zoom, Teams, Jitsi, or Whereby URL first.')
+      return
+    }
+
+    setBotJoinStatus(`Sending ${settings.avatarName} to ${platform.name}...`)
+    try {
+      const { data } = await pyApi.post('/meeting-bot/join', {
+        meeting_url: meetingUrl,
+        bot_name: settings.avatarName || 'MEZOMAI AI',
+        entry_message: `${settings.avatarName || 'MEZOMAI AI'} joined to capture notes and action items.`,
+      })
+
+      if (data.status === 'joining') {
+        setBotJoinStatus(`${settings.avatarName} is joining ${platform.name}. Bot ID: ${data.bot_id || 'pending'}.`)
+      } else {
+        setBotJoinStatus(data.message || 'Meeting bot provider is not configured. Use the in-app companion room for now.')
+      }
+    } catch (e) {
+      setBotJoinStatus(e.response?.data?.message || 'Could not reach the Python meeting-bot backend.')
+    }
+  }
+
   const handleLeave = async () => {
     window.clearInterval(timerRef.current)
     stopSpeechRecognition()
@@ -257,7 +283,11 @@ export default function MeetingsPage() {
               <Info label="Mode" value={settings.personality || 'friendly'}/>
             </div>
             {mediaError && <div style={warning}>{mediaError}</div>}
-            <button type="submit" className="gold-glow-btn" style={primaryBtn}>Join Room</button>
+            {botJoinStatus && <div style={botStatus}>{botJoinStatus}</div>}
+            <div style={buttonRow}>
+              <button type="submit" className="gold-glow-btn" style={primaryBtn}>Open Companion Room</button>
+              <button type="button" onClick={handleInviteExternalBot} style={secondaryActionBtn}>Invite AI to Link</button>
+            </div>
           </form>
 
           <section style={panel}>
@@ -413,7 +443,10 @@ const settingsGrid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10,
 const infoBox = { background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 12, padding: 12 }
 const muted = { fontSize: 11, color: 'var(--t3)' }
 const warning = { marginTop: 12, background: 'rgba(217,119,6,.1)', border: '1px solid rgba(217,119,6,.25)', color: 'var(--amber)', borderRadius: 10, padding: 12, fontSize: 12 }
+const botStatus = { marginTop: 12, background: 'var(--bg2)', border: '1px solid var(--b1)', color: 'var(--t2)', borderRadius: 10, padding: 12, fontSize: 12, lineHeight: 1.5 }
+const buttonRow = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 18 }
 const primaryBtn = { border: 'none', padding: '12px 16px', fontWeight: 800, marginTop: 18 }
+const secondaryActionBtn = { background: 'var(--bg2)', border: '1px solid var(--b1)', color: 'var(--t2)', padding: '12px 16px', fontWeight: 800, marginTop: 18 }
 const secondaryBtn = { background: 'var(--bg2)', border: '1px solid var(--b1)', color: 'var(--t2)', padding: '12px 16px', fontWeight: 800, flex: 1 }
 const emptyBox = { background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 12, padding: 16, color: 'var(--t3)', textAlign: 'center' }
 const recentRow = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 12, padding: 12 }

@@ -77,6 +77,8 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
       - APP_ENV=${APP_ENV:-production}
+      - MEETING_BOT_PROVIDER=${MEETING_BOT_PROVIDER:-meetingbaas}
+      - MEETINGBAAS_API_KEY=${MEETINGBAAS_API_KEY:-}
     depends_on:
       mysql:
         condition: service_healthy

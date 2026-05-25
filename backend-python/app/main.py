@@ -2,7 +2,7 @@ import os
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import ai, code_run, chat_ws, meeting_ws
+from app.routers import ai, code_run, chat_ws, meeting_ws, meeting_bot
 
 app = FastAPI(
     title="MEZOMAI AI Services Backend",
@@ -27,6 +27,7 @@ app.add_middleware(
 
 # Include Routers
 app.include_router(ai.router, prefix="/ai", tags=["AI Core"])
+app.include_router(meeting_bot.router, prefix="/ai/meeting-bot", tags=["Meeting Bot"])
 app.include_router(code_run.router, prefix="/code", tags=["Sandbox Code Execution"])
 app.include_router(chat_ws.router, prefix="/ws/chat", tags=["WebSockets Chat"])
 app.include_router(meeting_ws.router, prefix="/ws/meeting", tags=["WebSockets Meetings"])

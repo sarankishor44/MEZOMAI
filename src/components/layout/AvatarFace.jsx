@@ -1,134 +1,540 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../../store'
 
+const STYLE_COLORS = {
+  cyan: '#22d3ee',
+  purple: '#a78bfa',
+  coral: '#fb7185',
+  gold: '#f8c96b',
+  blue: '#60a5fa',
+}
+
 export default function AvatarFace({ size = 120, showGlow = true }) {
-  const { avatarState, settings, theme } = useStore()
+  const { avatarState, settings } = useStore()
   const [blink, setBlink] = useState(false)
-  const [mouthOpen, setMouthOpen] = useState(0)
+  const [talkFrame, setTalkFrame] = useState(0)
 
   useEffect(() => {
     const interval = setInterval(() => {
       setBlink(true)
-      setTimeout(() => setBlink(false), 140)
-    }, 2600 + Math.random() * 1800)
+      window.setTimeout(() => setBlink(false), 130)
+    }, 2400 + Math.random() * 2200)
     return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
     if (avatarState !== 'talking') {
-      setMouthOpen(0)
-      return
+      setTalkFrame(0)
+      return undefined
     }
-    const interval = setInterval(() => setMouthOpen(Math.random() * 8), 110)
+    const interval = setInterval(() => setTalkFrame(Math.random()), 95)
     return () => clearInterval(interval)
   }, [avatarState])
 
-  const colorMap = {
-    cyan: '#22d3ee',
-    purple: '#a78bfa',
-    coral: '#fb7185',
-    gold: '#f8c96b',
-    blue: '#60a5fa',
-  }
-  const color = colorMap[settings.avatarStyle] || colorMap.blue
-  const gender = settings.avatarGender || 'female'
-  const glowColor = avatarState === 'talking' ? '#4ade80'
-    : avatarState === 'listening' ? '#22d3ee'
-    : avatarState === 'thinking' ? '#a78bfa'
-    : color
-  const eyeScaleY = blink ? 0.08 : 1
-  const dark = theme === 'dark'
+  const gender = settings.avatarGender === 'male' ? 'male' : 'female'
+  const accent = STYLE_COLORS[settings.avatarStyle] || STYLE_COLORS.gold
+  const stateColor = avatarState === 'talking'
+    ? '#22c55e'
+    : avatarState === 'listening'
+      ? '#22d3ee'
+      : avatarState === 'thinking'
+        ? '#a78bfa'
+        : accent
+
+  const cssVars = useMemo(() => ({
+    '--avatar-size': `${size}px`,
+    '--avatar-scale': size / 220,
+    '--avatar-accent': accent,
+    '--avatar-state': stateColor,
+    '--mouth-open': avatarState === 'talking' ? `${8 + talkFrame * 16}px` : '3px',
+    '--mouth-radius': avatarState === 'talking' ? `${12 + talkFrame * 16}px` : '34px',
+    '--eye-scale': blink ? 0.08 : 1,
+  }), [accent, avatarState, blink, size, stateColor, talkFrame])
 
   return (
-    <div style={{ width: size, height: size, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {showGlow && (
-        <div style={{
-          position: 'absolute',
-          inset: -8,
-          borderRadius: '50%',
-          background: `conic-gradient(from 180deg, ${glowColor}, transparent 35%, ${glowColor})`,
-          animation: 'avatarSpin 5s linear infinite',
-          opacity: avatarState === 'idle' ? 0.38 : 0.82,
-          boxShadow: `0 0 28px ${glowColor}55`,
-        }}>
-          <div style={{ position: 'absolute', inset: 4, borderRadius: '50%', background: 'var(--bg1)' }}/>
+    <div
+      className={`mez-avatar mez-avatar-${gender} mez-avatar-${avatarState}`}
+      style={cssVars}
+      aria-label={`${settings.avatarName || 'MEZOMAI'} ${gender} AI avatar`}
+      role="img"
+    >
+      {showGlow && <div className="mez-avatar-glow" />}
+      <div className="mez-avatar-card">
+        <div className="mez-avatar-bg" />
+        <div className="mez-avatar-shoulders" />
+        <div className="mez-avatar-neck" />
+        <div className="mez-avatar-hair-back" />
+        <div className="mez-avatar-ear mez-avatar-ear-left" />
+        <div className="mez-avatar-ear mez-avatar-ear-right" />
+        {gender === 'female' && (
+          <>
+            <div className="mez-avatar-hoop mez-avatar-hoop-left" />
+            <div className="mez-avatar-hoop mez-avatar-hoop-right" />
+          </>
+        )}
+        <div className="mez-avatar-face">
+          <div className="mez-avatar-cheek mez-avatar-cheek-left" />
+          <div className="mez-avatar-cheek mez-avatar-cheek-right" />
+          <div className="mez-avatar-brow mez-avatar-brow-left" />
+          <div className="mez-avatar-brow mez-avatar-brow-right" />
+          <Eye side="left" gender={gender} />
+          <Eye side="right" gender={gender} />
+          <div className="mez-avatar-nose" />
+          <div className="mez-avatar-mouth">
+            <div className="mez-avatar-teeth" />
+            <div className="mez-avatar-tongue" />
+          </div>
         </div>
-      )}
-
-      <div style={{
-        position: 'relative',
-        width: size,
-        height: size,
-        borderRadius: '50%',
-        overflow: 'hidden',
-        border: `1px solid ${color}`,
-        background: dark ? '#111827' : '#f8fafc',
-        boxShadow: 'inset 0 0 18px rgba(15,23,42,.28)',
-      }}>
-        <svg width={size} height={size} viewBox="0 0 120 120">
-          <defs>
-            <linearGradient id={`skin-${gender}-${size}`} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor={gender === 'male' ? '#f1c7a7' : '#ffd7c2'} />
-              <stop offset="100%" stopColor={gender === 'male' ? '#c98f6c' : '#e9a18f'} />
-            </linearGradient>
-            <linearGradient id={`hair-${gender}-${size}`} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor={gender === 'male' ? '#1f2937' : '#f8fafc'} />
-              <stop offset="100%" stopColor={gender === 'male' ? '#475569' : '#dbeafe'} />
-            </linearGradient>
-          </defs>
-
-          <rect width="120" height="120" fill={dark ? '#0f172a' : '#e0f2fe'} />
-          <circle cx="60" cy="62" r="47" fill={`url(#skin-${gender}-${size})`} />
-
-          {gender === 'female' ? (
-            <>
-              <path d="M13 61C15 20 43 5 61 7c23 2 41 21 43 58-12-18-24-27-44-27-20 0-35 8-47 23Z" fill={`url(#hair-${gender}-${size})`} />
-              <path d="M18 59c1 26 9 44 20 55-15-4-26-18-30-38-2-11 2-18 10-17ZM102 59c-1 26-9 44-20 55 15-4 26-18 30-38 2-11-2-18-10-17Z" fill={`url(#hair-${gender}-${size})`} opacity=".95"/>
-              <path d="M25 29h70c-4 13-16 18-35 18S29 42 25 29Z" fill={`url(#hair-${gender}-${size})`} />
-            </>
-          ) : (
-            <>
-              <path d="M20 53C22 23 42 11 61 12c25 1 39 17 40 43-10-10-21-15-39-15-19 0-31 4-42 13Z" fill={`url(#hair-${gender}-${size})`} />
-              <path d="M28 42c8-20 48-26 64-3-18-4-45-3-64 3Z" fill={`url(#hair-${gender}-${size})`} />
-            </>
-          )}
-
-          <g transform={`translate(42, 55) scale(1, ${eyeScaleY})`} style={{ transformOrigin: '42px 59px', transition: 'transform .08s' }}>
-            <ellipse cx="0" cy="4" rx={gender === 'female' ? 8 : 6.5} ry="7" fill="#fff" />
-            <circle cx="1" cy="4" r="4.2" fill={color} />
-            <circle cx="2" cy="3" r="1.5" fill="#fff" />
-          </g>
-          <g transform={`translate(78, 55) scale(1, ${eyeScaleY})`} style={{ transformOrigin: '78px 59px', transition: 'transform .08s' }}>
-            <ellipse cx="0" cy="4" rx={gender === 'female' ? 8 : 6.5} ry="7" fill="#fff" />
-            <circle cx="1" cy="4" r="4.2" fill={color} />
-            <circle cx="2" cy="3" r="1.5" fill="#fff" />
-          </g>
-
-          <path d={avatarState === 'thinking' ? 'M33 48q9-6 18-1' : 'M34 49q8-4 16 0'} fill="none" stroke={gender === 'male' ? '#334155' : '#475569'} strokeWidth="2.5" strokeLinecap="round" />
-          <path d={avatarState === 'thinking' ? 'M69 47q9-5 18 1' : 'M70 49q8-4 16 0'} fill="none" stroke={gender === 'male' ? '#334155' : '#475569'} strokeWidth="2.5" strokeLinecap="round" />
-          {gender === 'female' && (
-            <>
-              <path d="M31 56q10-7 21 0" fill="none" stroke="#111827" strokeWidth="1.6" strokeLinecap="round" opacity=".65"/>
-              <path d="M68 56q10-7 21 0" fill="none" stroke="#111827" strokeWidth="1.6" strokeLinecap="round" opacity=".65"/>
-              <circle cx="20" cy="71" r="5" fill="none" stroke={color} strokeWidth="2"/>
-              <circle cx="100" cy="71" r="5" fill="none" stroke={color} strokeWidth="2"/>
-            </>
-          )}
-
-          <path d="M57 63q4 4 0 9" fill="none" stroke="#b87563" strokeWidth="1.8" strokeLinecap="round" opacity=".65"/>
-          <path
-            d={`M43 83 Q60 ${92 + mouthOpen} 77 83`}
-            fill={mouthOpen > 3 ? '#111827' : 'none'}
-            stroke={gender === 'female' ? '#9f1239' : '#7f1d1d'}
-            strokeWidth="3"
-            strokeLinecap="round"
-          />
-          {mouthOpen > 3 && <path d="M48 84h24" stroke="#fff" strokeWidth="2" strokeLinecap="round" opacity=".9"/>}
-          <text x="60" y="112" textAnchor="middle" fill={color} fontSize="7" fontFamily="monospace" fontWeight="700">AI AGENT</text>
-        </svg>
+        <Hair gender={gender} />
+        <div className="mez-avatar-label">AI Agent</div>
       </div>
-
-      <style>{`@keyframes avatarSpin { to { transform: rotate(360deg); } }`}</style>
+      <style>{avatarCss}</style>
     </div>
   )
 }
+
+function Eye({ side, gender }) {
+  return (
+    <div className={`mez-avatar-eye mez-avatar-eye-${side} mez-avatar-eye-${gender}`}>
+      <div className="mez-avatar-eye-shine" />
+      <div className="mez-avatar-iris">
+        <span />
+      </div>
+      <div className="mez-avatar-lashes" />
+    </div>
+  )
+}
+
+function Hair({ gender }) {
+  if (gender === 'male') {
+    return (
+      <>
+        <div className="mez-avatar-hair-front mez-avatar-hair-male-front" />
+        <div className="mez-avatar-quiff mez-avatar-quiff-1" />
+        <div className="mez-avatar-quiff mez-avatar-quiff-2" />
+        <div className="mez-avatar-quiff mez-avatar-quiff-3" />
+      </>
+    )
+  }
+
+  return (
+    <>
+      <div className="mez-avatar-hair-front mez-avatar-hair-female-front" />
+      {Array.from({ length: 10 }, (_, index) => (
+        <div key={index} className={`mez-avatar-bang mez-avatar-bang-${index + 1}`} />
+      ))}
+      <div className="mez-avatar-side-lock mez-avatar-side-lock-left" />
+      <div className="mez-avatar-side-lock mez-avatar-side-lock-right" />
+    </>
+  )
+}
+
+const avatarCss = `
+.mez-avatar {
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  min-width: var(--avatar-size);
+  position: relative;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+}
+
+.mez-avatar-glow {
+  position: absolute;
+  inset: calc(var(--avatar-size) * -0.055);
+  border-radius: 22%;
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--avatar-state), transparent 54%), transparent 62%),
+    conic-gradient(from 160deg, transparent 0 14%, var(--avatar-state), transparent 44% 62%, var(--avatar-state), transparent 88%);
+  filter: blur(calc(var(--avatar-size) * 0.02));
+  opacity: .82;
+  animation: mezAvatarGlow 4.8s linear infinite;
+  z-index: -1;
+}
+
+.mez-avatar-card {
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  position: relative;
+  overflow: hidden;
+  border-radius: 8%;
+  background: #15100d;
+  border: 1px solid color-mix(in srgb, var(--avatar-accent), #111827 36%);
+  box-shadow:
+    0 calc(var(--avatar-size) * .08) calc(var(--avatar-size) * .24) rgba(2, 6, 23, .34),
+    inset 0 0 calc(var(--avatar-size) * .08) rgba(255,255,255,.16);
+}
+
+.mez-avatar-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(10,7,5,.62), transparent 24% 76%, rgba(10,7,5,.7)),
+    radial-gradient(circle at 24% 28%, rgba(255,213,151,.36), transparent 20%),
+    radial-gradient(circle at 78% 24%, rgba(240,185,108,.28), transparent 18%),
+    linear-gradient(145deg, #3b2719 0%, #896133 48%, #1f1510 100%);
+}
+
+.mez-avatar-bg::before,
+.mez-avatar-bg::after {
+  content: "";
+  position: absolute;
+  top: 20%;
+  width: 18%;
+  height: 56%;
+  border-radius: 5%;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.08) 0 2px, transparent 2px 10px),
+    rgba(21, 12, 8, .42);
+  filter: blur(.2px);
+}
+.mez-avatar-bg::before { left: 7%; }
+.mez-avatar-bg::after { right: 7%; }
+
+.mez-avatar-shoulders {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: -9%;
+  height: 25%;
+  border-radius: 48% 48% 0 0;
+  background:
+    radial-gradient(circle at 50% 10%, rgba(255,255,255,.96), rgba(240,232,218,.72) 46%, rgba(207,190,170,.42) 80%),
+    linear-gradient(90deg, rgba(255,255,255,.3), transparent, rgba(255,255,255,.24));
+  filter: drop-shadow(0 -2px 4px rgba(65, 35, 22, .18));
+}
+.mez-avatar-male .mez-avatar-shoulders {
+  background:
+    linear-gradient(135deg, #192338, #263854 52%, #111827),
+    radial-gradient(circle at 50% 0, rgba(255,255,255,.18), transparent 46%);
+}
+
+.mez-avatar-neck {
+  position: absolute;
+  left: 43%;
+  top: 70%;
+  width: 14%;
+  height: 16%;
+  border-radius: 0 0 44% 44%;
+  background: linear-gradient(90deg, #dda98d, #ffd6be 44%, #cf9174);
+  box-shadow: inset 0 8px 10px rgba(125,64,47,.18);
+}
+
+.mez-avatar-hair-back {
+  position: absolute;
+  left: 11%;
+  top: 5%;
+  width: 78%;
+  height: 88%;
+  border-radius: 44% 44% 38% 38%;
+  background: linear-gradient(105deg, #f6f7ff, #dde8ff 45%, #9fb6da);
+  box-shadow: inset -18px -20px 22px rgba(74, 92, 135, .18), inset 15px 0 15px rgba(255,255,255,.5);
+}
+.mez-avatar-male .mez-avatar-hair-back {
+  left: 20%;
+  top: 6%;
+  width: 60%;
+  height: 34%;
+  border-radius: 48% 52% 36% 30%;
+  background: linear-gradient(135deg, #172033, #31415b 56%, #0f172a);
+  box-shadow: inset 10px 4px 12px rgba(255,255,255,.08), inset -12px -8px 12px rgba(0,0,0,.28);
+}
+
+.mez-avatar-face {
+  position: absolute;
+  left: 24%;
+  top: 18%;
+  width: 52%;
+  height: 62%;
+  border-radius: 48% 48% 46% 46% / 42% 42% 56% 56%;
+  background:
+    radial-gradient(circle at 50% 66%, rgba(255,255,255,.2), transparent 28%),
+    radial-gradient(circle at 32% 56%, rgba(255,155,170,.2), transparent 15%),
+    radial-gradient(circle at 68% 56%, rgba(255,155,170,.2), transparent 15%),
+    linear-gradient(115deg, #f3b894, #ffd7c1 42%, #e49c82 100%);
+  box-shadow:
+    inset -10px -10px 15px rgba(138, 73, 54, .17),
+    inset 10px 4px 16px rgba(255,255,255,.32),
+    0 4px 14px rgba(63, 31, 24, .16);
+}
+.mez-avatar-male .mez-avatar-face {
+  top: 20%;
+  height: 60%;
+  width: 50%;
+  left: 25%;
+  border-radius: 44% 44% 50% 50% / 38% 38% 62% 62%;
+  clip-path: polygon(8% 11%, 92% 11%, 96% 58%, 78% 93%, 50% 100%, 22% 93%, 4% 58%);
+  background:
+    radial-gradient(circle at 50% 66%, rgba(255,255,255,.16), transparent 24%),
+    linear-gradient(115deg, #d89f7d, #f1c09f 44%, #be765d 100%);
+}
+
+.mez-avatar-ear {
+  position: absolute;
+  top: 45%;
+  width: 8%;
+  height: 14%;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #e5a386, #ffc6aa);
+  box-shadow: inset -2px -2px 4px rgba(111,55,43,.16);
+}
+.mez-avatar-ear-left { left: 20%; }
+.mez-avatar-ear-right { right: 20%; }
+.mez-avatar-male .mez-avatar-ear-left { left: 22%; }
+.mez-avatar-male .mez-avatar-ear-right { right: 22%; }
+
+.mez-avatar-hoop {
+  position: absolute;
+  top: 54%;
+  width: 8%;
+  height: 13%;
+  border: calc(var(--avatar-size) * .012) solid #e1a83d;
+  border-radius: 50%;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,.22));
+}
+.mez-avatar-hoop-left { left: 16.8%; }
+.mez-avatar-hoop-right { right: 16.8%; }
+
+.mez-avatar-hair-front {
+  position: absolute;
+  pointer-events: none;
+}
+.mez-avatar-hair-female-front {
+  left: 17%;
+  top: 4%;
+  width: 66%;
+  height: 30%;
+  border-radius: 48% 48% 16% 16%;
+  background: linear-gradient(105deg, #ffffff, #edf3ff 48%, #becdea);
+  box-shadow: inset -10px -10px 16px rgba(101, 116, 154, .18), inset 10px 2px 12px rgba(255,255,255,.9);
+}
+.mez-avatar-hair-male-front {
+  left: 23%;
+  top: 8%;
+  width: 54%;
+  height: 24%;
+  border-radius: 54% 46% 42% 24%;
+  background: linear-gradient(130deg, #26364d, #111827 68%);
+  transform: rotate(-3deg);
+}
+
+.mez-avatar-bang {
+  position: absolute;
+  top: 9%;
+  width: 5.5%;
+  height: 29%;
+  border-radius: 40% 40% 70% 70%;
+  background: linear-gradient(90deg, #ffffff, #dbe6fb);
+  transform-origin: top center;
+  box-shadow: inset -2px 0 3px rgba(76,93,132,.12);
+}
+.mez-avatar-bang-1 { left: 27%; height: 26%; transform: rotate(7deg); }
+.mez-avatar-bang-2 { left: 32%; height: 31%; transform: rotate(4deg); }
+.mez-avatar-bang-3 { left: 37%; height: 33%; transform: rotate(2deg); }
+.mez-avatar-bang-4 { left: 42%; height: 34%; transform: rotate(1deg); }
+.mez-avatar-bang-5 { left: 47%; height: 35%; }
+.mez-avatar-bang-6 { left: 52%; height: 34%; transform: rotate(-1deg); }
+.mez-avatar-bang-7 { left: 57%; height: 33%; transform: rotate(-2deg); }
+.mez-avatar-bang-8 { left: 62%; height: 31%; transform: rotate(-4deg); }
+.mez-avatar-bang-9 { left: 67%; height: 28%; transform: rotate(-6deg); }
+.mez-avatar-bang-10 { left: 72%; height: 24%; transform: rotate(-9deg); }
+
+.mez-avatar-side-lock {
+  position: absolute;
+  top: 17%;
+  width: 8%;
+  height: 67%;
+  border-radius: 60% 40% 50% 50%;
+  background: linear-gradient(90deg, #ffffff, #ccd9f0);
+  filter: drop-shadow(0 4px 4px rgba(24, 37, 61, .16));
+}
+.mez-avatar-side-lock-left { left: 9%; transform: rotate(11deg); }
+.mez-avatar-side-lock-right { right: 9%; transform: rotate(-11deg); }
+
+.mez-avatar-quiff {
+  position: absolute;
+  background: linear-gradient(135deg, #384966, #111827);
+  border-radius: 80% 20% 70% 30%;
+  transform-origin: bottom right;
+}
+.mez-avatar-quiff-1 { left: 34%; top: 5%; width: 19%; height: 20%; transform: rotate(-30deg); }
+.mez-avatar-quiff-2 { left: 43%; top: 4%; width: 23%; height: 22%; transform: rotate(-8deg); }
+.mez-avatar-quiff-3 { left: 54%; top: 7%; width: 18%; height: 18%; transform: rotate(24deg); }
+
+.mez-avatar-eye {
+  position: absolute;
+  top: 39.5%;
+  width: 21%;
+  height: 18%;
+  border-radius: 52% 48% 50% 50%;
+  background: #fff;
+  box-shadow:
+    inset 0 -2px 3px rgba(64, 40, 60, .16),
+    0 1px 2px rgba(59, 29, 45, .14);
+  transform: scaleY(var(--eye-scale));
+  transition: transform .08s ease;
+  overflow: hidden;
+}
+.mez-avatar-eye-left { left: 21%; }
+.mez-avatar-eye-right { right: 21%; }
+.mez-avatar-eye-female {
+  width: 23%;
+  height: 19%;
+  border-top: 2px solid #211827;
+}
+.mez-avatar-eye-male {
+  width: 19%;
+  height: 15%;
+  top: 41%;
+}
+
+.mez-avatar-iris {
+  position: absolute;
+  left: 32%;
+  top: 16%;
+  width: 46%;
+  height: 66%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 30%, #fff 0 8%, transparent 9%),
+    radial-gradient(circle, #1f1530 0 18%, var(--avatar-accent) 20% 54%, #3b256d 57% 100%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.28), 0 0 8px color-mix(in srgb, var(--avatar-accent), transparent 42%);
+}
+.mez-avatar-iris span {
+  position: absolute;
+  left: 34%;
+  top: 34%;
+  width: 32%;
+  height: 32%;
+  border-radius: 50%;
+  background: #111827;
+}
+.mez-avatar-eye-shine {
+  position: absolute;
+  left: 20%;
+  top: 14%;
+  width: 24%;
+  height: 24%;
+  border-radius: 50%;
+  background: rgba(255,255,255,.9);
+  z-index: 2;
+}
+.mez-avatar-lashes {
+  display: none;
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  top: -18%;
+  height: 40%;
+  border-top: 2px solid #15111a;
+  border-radius: 50%;
+}
+.mez-avatar-eye-female .mez-avatar-lashes { display: block; }
+
+.mez-avatar-brow {
+  position: absolute;
+  top: 34%;
+  width: 21%;
+  height: 3%;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--avatar-accent), #2b1d20 48%);
+}
+.mez-avatar-brow-left { left: 21%; transform: rotate(-8deg); }
+.mez-avatar-brow-right { right: 21%; transform: rotate(8deg); }
+.mez-avatar-thinking .mez-avatar-brow-left { transform: rotate(7deg) translateY(-2px); }
+.mez-avatar-thinking .mez-avatar-brow-right { transform: rotate(-7deg) translateY(-2px); }
+
+.mez-avatar-nose {
+  position: absolute;
+  left: 47%;
+  top: 53%;
+  width: 7%;
+  height: 13%;
+  border-radius: 54% 44% 50% 50%;
+  background: linear-gradient(120deg, rgba(255,255,255,.12), rgba(165,85,63,.24));
+  box-shadow: 2px 2px 0 rgba(151,75,56,.18);
+}
+
+.mez-avatar-cheek {
+  position: absolute;
+  top: 58%;
+  width: 15%;
+  height: 9%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,117,150,.26), transparent 70%);
+}
+.mez-avatar-cheek-left { left: 15%; }
+.mez-avatar-cheek-right { right: 15%; }
+.mez-avatar-male .mez-avatar-cheek { opacity: .4; }
+
+.mez-avatar-mouth {
+  position: absolute;
+  left: 31%;
+  top: 73%;
+  width: 38%;
+  height: var(--mouth-open);
+  min-height: 3px;
+  border: 2px solid #9f1239;
+  border-top: 0;
+  border-radius: 0 0 var(--mouth-radius) var(--mouth-radius);
+  background: #3b0b18;
+  overflow: hidden;
+  box-shadow: 0 2px 3px rgba(101, 39, 45, .18);
+  transition: height .1s ease, border-radius .1s ease;
+}
+.mez-avatar-male .mez-avatar-mouth { border-color: #7f1d1d; }
+.mez-avatar-teeth {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 0;
+  height: 48%;
+  border-radius: 0 0 12px 12px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 13%, rgba(190,190,190,.35) 13% 15%, transparent 15% 28%),
+    #fff;
+}
+.mez-avatar-tongue {
+  position: absolute;
+  left: 27%;
+  right: 27%;
+  bottom: -16%;
+  height: 42%;
+  border-radius: 50%;
+  background: #f472b6;
+  opacity: .76;
+}
+
+.mez-avatar-label {
+  position: absolute;
+  left: 5%;
+  bottom: 4%;
+  padding: .18em .58em .24em;
+  border-radius: 999px;
+  background: rgba(255, 250, 214, .94);
+  color: #3f3412;
+  font-family: var(--ff-mono, monospace);
+  font-size: calc(var(--avatar-size) * .055);
+  font-weight: 800;
+  letter-spacing: 0;
+  box-shadow: 0 2px 8px rgba(24, 18, 8, .18);
+}
+
+.mez-avatar-listening .mez-avatar-card,
+.mez-avatar-talking .mez-avatar-card {
+  box-shadow:
+    0 calc(var(--avatar-size) * .08) calc(var(--avatar-size) * .24) rgba(2, 6, 23, .34),
+    0 0 calc(var(--avatar-size) * .08) color-mix(in srgb, var(--avatar-state), transparent 45%),
+    inset 0 0 calc(var(--avatar-size) * .08) rgba(255,255,255,.16);
+}
+.mez-avatar-talking .mez-avatar-face {
+  animation: mezAvatarTalk 220ms ease-in-out infinite alternate;
+}
+
+@keyframes mezAvatarGlow { to { transform: rotate(360deg); } }
+@keyframes mezAvatarTalk {
+  from { transform: translateY(0); }
+  to { transform: translateY(calc(var(--avatar-size) * .006)); }
+}
+`

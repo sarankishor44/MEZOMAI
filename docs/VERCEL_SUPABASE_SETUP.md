@@ -30,6 +30,13 @@ VITE_PHP_API=https://your-php-api.example.com/api
 VITE_PYTHON_API=https://your-python-api.example.com
 ```
 
+Optional, on the deployed Python/FastAPI backend, if you want MEZOMAI to join a pasted Google Meet/Zoom/Teams URL as a real bot participant:
+
+```env
+MEETING_BOT_PROVIDER=meetingbaas
+MEETINGBAAS_API_KEY=your-meetingbaas-api-key
+```
+
 ## 3. What runs where
 
 Vercel hosts the React app.
