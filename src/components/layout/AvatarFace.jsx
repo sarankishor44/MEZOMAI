@@ -46,8 +46,8 @@ export default function AvatarFace({ size = 120, showGlow = true }) {
     '--avatar-scale': size / 220,
     '--avatar-accent': accent,
     '--avatar-state': stateColor,
-    '--mouth-open': avatarState === 'talking' ? `${8 + talkFrame * 16}px` : '3px',
-    '--mouth-radius': avatarState === 'talking' ? `${12 + talkFrame * 16}px` : '34px',
+    '--mouth-open': avatarState === 'talking' ? `${12 + talkFrame * 16}px` : gender === 'female' ? '11px' : '8px',
+    '--mouth-radius': avatarState === 'talking' ? `${16 + talkFrame * 18}px` : '999px',
     '--eye-scale': blink ? 0.08 : 1,
   }), [accent, avatarState, blink, size, stateColor, talkFrame])
 
@@ -171,9 +171,10 @@ const avatarCss = `
   inset: 0;
   background:
     linear-gradient(90deg, rgba(10,7,5,.62), transparent 24% 76%, rgba(10,7,5,.7)),
-    radial-gradient(circle at 24% 28%, rgba(255,213,151,.36), transparent 20%),
-    radial-gradient(circle at 78% 24%, rgba(240,185,108,.28), transparent 18%),
-    linear-gradient(145deg, #3b2719 0%, #896133 48%, #1f1510 100%);
+    radial-gradient(circle at 50% 38%, rgba(255,221,171,.32), transparent 34%),
+    radial-gradient(circle at 24% 28%, rgba(255,213,151,.42), transparent 20%),
+    radial-gradient(circle at 78% 24%, rgba(240,185,108,.31), transparent 18%),
+    linear-gradient(145deg, #3b2719 0%, #936739 48%, #1f1510 100%);
 }
 
 .mez-avatar-bg::before,
@@ -228,7 +229,9 @@ const avatarCss = `
   width: 78%;
   height: 88%;
   border-radius: 44% 44% 38% 38%;
-  background: linear-gradient(105deg, #f6f7ff, #dde8ff 45%, #9fb6da);
+  background:
+    repeating-linear-gradient(92deg, rgba(255,255,255,.42) 0 2px, transparent 2px 9px),
+    linear-gradient(105deg, #fbfbff, #dfeaff 45%, #9fb6da);
   box-shadow: inset -18px -20px 22px rgba(74, 92, 135, .18), inset 15px 0 15px rgba(255,255,255,.5);
 }
 .mez-avatar-male .mez-avatar-hair-back {
@@ -249,6 +252,8 @@ const avatarCss = `
   height: 62%;
   border-radius: 48% 48% 46% 46% / 42% 42% 56% 56%;
   background:
+    radial-gradient(circle at 36% 34%, rgba(255,255,255,.42), transparent 12%),
+    radial-gradient(circle at 64% 34%, rgba(255,255,255,.28), transparent 12%),
     radial-gradient(circle at 50% 66%, rgba(255,255,255,.2), transparent 28%),
     radial-gradient(circle at 32% 56%, rgba(255,155,170,.2), transparent 15%),
     radial-gradient(circle at 68% 56%, rgba(255,155,170,.2), transparent 15%),
@@ -257,6 +262,26 @@ const avatarCss = `
     inset -10px -10px 15px rgba(138, 73, 54, .17),
     inset 10px 4px 16px rgba(255,255,255,.32),
     0 4px 14px rgba(63, 31, 24, .16);
+}
+.mez-avatar-face::before {
+  content: "";
+  position: absolute;
+  inset: 5% 11% auto;
+  height: 38%;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,.24), transparent 78%);
+  pointer-events: none;
+}
+.mez-avatar-face::after {
+  content: "";
+  position: absolute;
+  left: 30%;
+  right: 30%;
+  top: 86%;
+  height: 8%;
+  border-radius: 50%;
+  background: rgba(117, 54, 45, .12);
+  filter: blur(3px);
 }
 .mez-avatar-male .mez-avatar-face {
   top: 20%;
@@ -306,7 +331,9 @@ const avatarCss = `
   width: 66%;
   height: 30%;
   border-radius: 48% 48% 16% 16%;
-  background: linear-gradient(105deg, #ffffff, #edf3ff 48%, #becdea);
+  background:
+    repeating-linear-gradient(92deg, rgba(255,255,255,.7) 0 2px, rgba(211,224,249,.28) 2px 7px),
+    linear-gradient(105deg, #ffffff, #edf3ff 48%, #becdea);
   box-shadow: inset -10px -10px 16px rgba(101, 116, 154, .18), inset 10px 2px 12px rgba(255,255,255,.9);
 }
 .mez-avatar-hair-male-front {
@@ -325,7 +352,9 @@ const avatarCss = `
   width: 5.5%;
   height: 29%;
   border-radius: 40% 40% 70% 70%;
-  background: linear-gradient(90deg, #ffffff, #dbe6fb);
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.78), transparent 46%),
+    linear-gradient(90deg, #ffffff, #dbe6fb);
   transform-origin: top center;
   box-shadow: inset -2px 0 3px rgba(76,93,132,.12);
 }
@@ -365,8 +394,8 @@ const avatarCss = `
 .mez-avatar-eye {
   position: absolute;
   top: 39.5%;
-  width: 21%;
-  height: 18%;
+  width: 22%;
+  height: 18.5%;
   border-radius: 52% 48% 50% 50%;
   background: #fff;
   box-shadow:
@@ -376,11 +405,11 @@ const avatarCss = `
   transition: transform .08s ease;
   overflow: hidden;
 }
-.mez-avatar-eye-left { left: 21%; }
-.mez-avatar-eye-right { right: 21%; }
+.mez-avatar-eye-left { left: 19%; }
+.mez-avatar-eye-right { right: 19%; }
 .mez-avatar-eye-female {
-  width: 23%;
-  height: 19%;
+  width: 25%;
+  height: 20.5%;
   border-top: 2px solid #211827;
 }
 .mez-avatar-eye-male {
@@ -397,8 +426,9 @@ const avatarCss = `
   height: 66%;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 34% 30%, #fff 0 8%, transparent 9%),
-    radial-gradient(circle, #1f1530 0 18%, var(--avatar-accent) 20% 54%, #3b256d 57% 100%);
+    radial-gradient(circle at 30% 24%, #fff 0 9%, transparent 10%),
+    radial-gradient(circle at 62% 70%, rgba(255,255,255,.54) 0 5%, transparent 6%),
+    radial-gradient(circle, #1f1530 0 16%, var(--avatar-accent) 18% 52%, #3b256d 56% 100%);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.28), 0 0 8px color-mix(in srgb, var(--avatar-accent), transparent 42%);
 }
 .mez-avatar-iris span {
@@ -470,9 +500,9 @@ const avatarCss = `
 
 .mez-avatar-mouth {
   position: absolute;
-  left: 31%;
+  left: 28%;
   top: 73%;
-  width: 38%;
+  width: 44%;
   height: var(--mouth-open);
   min-height: 3px;
   border: 2px solid #9f1239;
@@ -483,17 +513,32 @@ const avatarCss = `
   box-shadow: 0 2px 3px rgba(101, 39, 45, .18);
   transition: height .1s ease, border-radius .1s ease;
 }
+.mez-avatar-female .mez-avatar-mouth {
+  top: 72%;
+  left: 26%;
+  width: 48%;
+}
 .mez-avatar-male .mez-avatar-mouth { border-color: #7f1d1d; }
 .mez-avatar-teeth {
   position: absolute;
   left: 8%;
   right: 8%;
   top: 0;
-  height: 48%;
+  height: 58%;
   border-radius: 0 0 12px 12px;
   background:
+    linear-gradient(180deg, rgba(255,255,255,.98), rgba(238,245,255,.92)),
     repeating-linear-gradient(90deg, transparent 0 13%, rgba(190,190,190,.35) 13% 15%, transparent 15% 28%),
     #fff;
+}
+.mez-avatar-teeth::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 47%;
+  height: 1px;
+  background: rgba(156,163,175,.45);
 }
 .mez-avatar-tongue {
   position: absolute;

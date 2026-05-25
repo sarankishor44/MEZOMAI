@@ -1,17 +1,9 @@
 import React, { useState } from 'react'
 import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
-import { getBackendUrls, phpApi, setBackendUrls } from '../utils/api'
+import { phpApi } from '../utils/api'
 import { isSupabaseConfigured } from '../utils/supabase'
 import { loadSupabaseSettings, saveSupabaseSettings, signOutSupabase } from '../utils/supabaseBackend'
-
-const API_FIELDS = [
-  { key: 'apiKey', provider: 'Anthropic', placeholder: 'sk-ant-api03-...', models: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'] },
-  { key: 'openAiKey', provider: 'OpenAI', placeholder: 'sk-...', models: ['gpt-4o', 'gpt-4o-mini'] },
-  { key: 'geminiKey', provider: 'Gemini', placeholder: 'AIza...', models: ['gemini-1.5-pro', 'gemini-1.5-flash'] },
-  { key: 'elevenLabsKey', provider: 'ElevenLabs Voice', placeholder: 'voice api key', models: [] },
-  { key: 'dailyKey', provider: 'Daily Meetings', placeholder: 'daily api key', models: [] },
-]
 
 const PRESETS = [
   ['Friendly', 'friendly', (name) => `You are ${name}, a warm and helpful AI assistant. Keep answers clear and practical.`],
@@ -22,12 +14,8 @@ const PRESETS = [
 
 export default function SettingsPage() {
   const { settings, updateSettings, logout } = useStore()
-  const [visible, setVisible] = useState({})
-  const [testResult, setTestResult] = useState(null)
-  const [testing, setTesting] = useState('')
   const [saving, setSaving] = useState(false)
   const [dbStatus, setDbStatus] = useState('Local settings')
-  const [backendUrls, setBackendUrlState] = useState(() => getBackendUrls())
   const voices = typeof speechSynthesis !== 'undefined' ? speechSynthesis.getVoices() : []
 
   React.useEffect(() => {
@@ -67,11 +55,6 @@ export default function SettingsPage() {
         voice_pitch: settings.voicePitch,
         model: settings.model,
         activeProvider: settings.activeProvider,
-        apiKey: settings.apiKey,
-        openAiKey: settings.openAiKey,
-        geminiKey: settings.geminiKey,
-        elevenLabsKey: settings.elevenLabsKey,
-        dailyKey: settings.dailyKey,
       })
       setDbStatus('Saved to DB')
     } catch (e) {
@@ -88,38 +71,6 @@ export default function SettingsPage() {
       setDbStatus(e.response?.data?.message || 'DB save failed')
     } finally {
       setSaving(false)
-    }
-  }
-
-  const saveBackendUrls = () => {
-    setBackendUrls({
-      phpUrl: backendUrls.phpUrl,
-      pythonUrl: backendUrls.pythonUrl,
-    })
-    setBackendUrlState(getBackendUrls())
-    setDbStatus('Backend URLs saved in this browser')
-  }
-
-  const testProvider = async (field) => {
-    setTesting(field)
-    setTestResult(null)
-    try {
-      const value = settings[field]
-      if (!value) throw new Error('Add a key before testing.')
-      if (field === 'apiKey') {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': value, 'anthropic-version': '2023-06-01' },
-          body: JSON.stringify({ model: settings.model || 'claude-3-5-sonnet-20241022', max_tokens: 8, messages: [{ role: 'user', content: 'ping' }] }),
-        })
-        const data = await res.json()
-        if (data.error) throw new Error(data.error.message)
-      }
-      setTestResult({ ok: true, msg: `${API_FIELDS.find(f => f.key === field)?.provider} key is saved and ready.` })
-    } catch (e) {
-      setTestResult({ ok: false, msg: e.message })
-    } finally {
-      setTesting('')
     }
   }
 
@@ -153,56 +104,6 @@ export default function SettingsPage() {
       </div>
 
       <div style={grid}>
-        <section style={panel}>
-          <SectionTitle title="Backend API URLs" sub="Use your own separated PHP and Python deployments so requests stay on your infrastructure."/>
-          <Row label="PHP API">
-            <input
-              value={backendUrls.phpUrl}
-              onChange={e => setBackendUrlState(v => ({ ...v, phpUrl: e.target.value }))}
-              placeholder="https://your-php-host.com/api"
-              style={input}
-            />
-          </Row>
-          <Row label="Python API">
-            <input
-              value={backendUrls.pythonUrl}
-              onChange={e => setBackendUrlState(v => ({ ...v, pythonUrl: e.target.value }))}
-              placeholder="https://your-python-api.vercel.app"
-              style={input}
-            />
-          </Row>
-          <div style={hint}>Python REST resolves to: {backendUrls.pythonUrl?.replace(/\/$/, '')?.endsWith('/ai') ? backendUrls.pythonUrl : `${backendUrls.pythonUrl?.replace(/\/$/, '') || '/ai'}/ai`}</div>
-          <button onClick={saveBackendUrls} style={smallBtn}>Save Backend URLs</button>
-        </section>
-
-        <section style={panel}>
-          <SectionTitle title="Multiple API Providers" sub="Store provider keys for the signed-in backend user when PHP or Supabase is available."/>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {API_FIELDS.map(field => (
-              <div key={field.key} style={apiRow}>
-                <div style={{ minWidth: 140 }}>
-                  <div style={{ fontWeight: 800 }}>{field.provider}</div>
-                  <div style={hint}>{field.key === 'apiKey' ? 'Primary AI provider' : 'Optional integration'}</div>
-                </div>
-                <input
-                  type={visible[field.key] ? 'text' : 'password'}
-                  value={settings[field.key] || ''}
-                  onChange={e => updateSettings({ [field.key]: e.target.value })}
-                  placeholder={field.placeholder}
-                  style={input}
-                />
-                <button onClick={() => setVisible(v => ({ ...v, [field.key]: !v[field.key] }))} style={smallBtn}>
-                  {visible[field.key] ? 'Hide' : 'Show'}
-                </button>
-                <button onClick={() => testProvider(field.key)} disabled={testing === field.key || !settings[field.key]} style={smallBtn}>
-                  {testing === field.key ? 'Testing' : 'Test'}
-                </button>
-              </div>
-            ))}
-          </div>
-          {testResult && <div style={resultBox(testResult.ok)}>{testResult.msg}</div>}
-        </section>
-
         <section style={panel}>
           <SectionTitle title="AI Agent Identity" sub="Choose male or female avatar presentation, name, style, and behavior."/>
           <div style={avatarLayout}>
@@ -307,12 +208,10 @@ const grid = { display: 'grid', gridTemplateColumns: 'minmax(0,1.25fr) minmax(32
 const panel = { background: 'var(--bg1)', border: '1px solid var(--b1)', borderRadius: 16, padding: 20, boxShadow: '0 18px 45px rgba(15,23,42,.08)' }
 const sectionTitle = { fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 800 }
 const sectionSub = { color: 'var(--t3)', fontSize: 12, marginTop: 4, lineHeight: 1.5 }
-const apiRow = { display: 'grid', gridTemplateColumns: '150px minmax(0,1fr) 58px 58px', gap: 8, alignItems: 'center' }
 const hint = { color: 'var(--t3)', fontSize: 11, marginTop: 3 }
 const input = { background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 9, padding: '10px 12px', color: 'var(--t1)', minWidth: 0 }
 const smallBtn = { background: 'var(--bg2)', border: '1px solid var(--b1)', color: 'var(--t2)', padding: '9px 10px', fontSize: 12, fontWeight: 800 }
 const dangerBtn = { background: 'rgba(220,38,38,.1)', border: '1px solid rgba(220,38,38,.25)', color: 'var(--red)', padding: '10px 14px', fontWeight: 800 }
-const resultBox = (ok) => ({ marginTop: 12, background: ok ? 'rgba(22,163,74,.1)' : 'rgba(220,38,38,.1)', border: `1px solid ${ok ? 'rgba(22,163,74,.28)' : 'rgba(220,38,38,.28)'}`, color: ok ? 'var(--green)' : 'var(--red)', padding: 12, borderRadius: 10, fontSize: 12 })
 const avatarLayout = { display: 'flex', gap: 22, alignItems: 'center' }
 const label = { fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--t3)', letterSpacing: '.1em', textTransform: 'uppercase' }
 const segmented = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 10, padding: 4 }
