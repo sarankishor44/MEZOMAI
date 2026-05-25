@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
-import { phpApi } from '../utils/api'
+import { getBackendUrls, phpApi, setBackendUrls } from '../utils/api'
 import { isSupabaseConfigured } from '../utils/supabase'
 import { loadSupabaseSettings, saveSupabaseSettings, signOutSupabase } from '../utils/supabaseBackend'
 
@@ -27,6 +27,7 @@ export default function SettingsPage() {
   const [testing, setTesting] = useState('')
   const [saving, setSaving] = useState(false)
   const [dbStatus, setDbStatus] = useState('Local settings')
+  const [backendUrls, setBackendUrlState] = useState(() => getBackendUrls())
   const voices = typeof speechSynthesis !== 'undefined' ? speechSynthesis.getVoices() : []
 
   React.useEffect(() => {
@@ -90,6 +91,15 @@ export default function SettingsPage() {
     }
   }
 
+  const saveBackendUrls = () => {
+    setBackendUrls({
+      phpUrl: backendUrls.phpUrl,
+      pythonUrl: backendUrls.pythonUrl,
+    })
+    setBackendUrlState(getBackendUrls())
+    setDbStatus('Backend URLs saved in this browser')
+  }
+
   const testProvider = async (field) => {
     setTesting(field)
     setTestResult(null)
@@ -143,6 +153,28 @@ export default function SettingsPage() {
       </div>
 
       <div style={grid}>
+        <section style={panel}>
+          <SectionTitle title="Backend API URLs" sub="Use your own separated PHP and Python deployments so requests stay on your infrastructure."/>
+          <Row label="PHP API">
+            <input
+              value={backendUrls.phpUrl}
+              onChange={e => setBackendUrlState(v => ({ ...v, phpUrl: e.target.value }))}
+              placeholder="https://your-php-host.com/api"
+              style={input}
+            />
+          </Row>
+          <Row label="Python API">
+            <input
+              value={backendUrls.pythonUrl}
+              onChange={e => setBackendUrlState(v => ({ ...v, pythonUrl: e.target.value }))}
+              placeholder="https://your-python-api.vercel.app"
+              style={input}
+            />
+          </Row>
+          <div style={hint}>Python REST resolves to: {backendUrls.pythonUrl?.replace(/\/$/, '')?.endsWith('/ai') ? backendUrls.pythonUrl : `${backendUrls.pythonUrl?.replace(/\/$/, '') || '/ai'}/ai`}</div>
+          <button onClick={saveBackendUrls} style={smallBtn}>Save Backend URLs</button>
+        </section>
+
         <section style={panel}>
           <SectionTitle title="Multiple API Providers" sub="Store provider keys for the signed-in backend user when PHP or Supabase is available."/>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

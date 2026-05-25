@@ -1,18 +1,32 @@
 import axios from 'axios'
 
-const getPhpBase = () => {
+export const getPhpBase = () => {
   return localStorage.getItem('aria_php_api_url') || import.meta.env.VITE_PHP_API || '/api'
 }
 
-const getPyBase = () => {
+export const getPyBase = () => {
   return localStorage.getItem('aria_py_api_url') || import.meta.env.VITE_PYTHON_API || '/ai'
 }
 
-const getPyRestBase = () => {
+export const getPyRestBase = () => {
   const base = getPyBase().replace(/\/$/, '')
   if (base === '/ai' || base.endsWith('/ai')) return base
   return `${base}/ai`
 }
+
+export const setBackendUrls = ({ phpUrl, pythonUrl }) => {
+  if (phpUrl) localStorage.setItem('aria_php_api_url', phpUrl.replace(/\/$/, ''))
+  else localStorage.removeItem('aria_php_api_url')
+
+  if (pythonUrl) localStorage.setItem('aria_py_api_url', pythonUrl.replace(/\/$/, ''))
+  else localStorage.removeItem('aria_py_api_url')
+}
+
+export const getBackendUrls = () => ({
+  phpUrl: getPhpBase(),
+  pythonUrl: getPyBase(),
+  pythonRestUrl: getPyRestBase(),
+})
 
 // ── PHP Laravel REST API ──────────────────────────────────────
 export const phpApi = axios.create({
