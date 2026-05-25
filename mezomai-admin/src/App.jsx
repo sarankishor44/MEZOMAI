@@ -5,7 +5,7 @@ import Users from './pages/Users';
 
 function App() {
   return (
-    <Router basename="/admin">
+    <Router>
       <div className="app-container">
         <Sidebar />
         <main className="main-content">
