@@ -20,7 +20,20 @@ export default function Characters() {
         {agents.map(agent => (
           <div className="cyber-panel character-card" key={agent.name}>
             <div className={`admin-avatar ${agent.gender.toLowerCase()}`}>
-              <div className="admin-avatar-face" />
+              <div className="admin-avatar-shoulders" />
+              <div className="admin-avatar-neck" />
+              <div className="admin-avatar-hair-back" />
+              <div className="admin-avatar-ear left" />
+              <div className="admin-avatar-ear right" />
+              <div className="admin-avatar-head">
+                <div className="admin-avatar-brow left" />
+                <div className="admin-avatar-brow right" />
+                <div className="admin-avatar-eye left" />
+                <div className="admin-avatar-eye right" />
+                <div className="admin-avatar-nose" />
+                <div className="admin-avatar-mouth" />
+              </div>
+              <div className="admin-avatar-hair-front" />
             </div>
             <div>
               <div className="stat-title">{agent.gender} Agent</div>

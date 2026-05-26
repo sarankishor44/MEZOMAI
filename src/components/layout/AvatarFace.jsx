@@ -158,23 +158,23 @@ const avatarCss = `
   height: var(--avatar-size);
   position: relative;
   overflow: hidden;
-  border-radius: 8%;
-  background: #15100d;
-  border: 1px solid color-mix(in srgb, var(--avatar-accent), #111827 36%);
+  border-radius: 12%;
+  background: #221713;
+  border: 1px solid color-mix(in srgb, var(--avatar-accent), #111827 48%);
   box-shadow:
     0 calc(var(--avatar-size) * .08) calc(var(--avatar-size) * .24) rgba(2, 6, 23, .34),
-    inset 0 0 calc(var(--avatar-size) * .08) rgba(255,255,255,.16);
+    inset 0 calc(var(--avatar-size) * .01) calc(var(--avatar-size) * .08) rgba(255,255,255,.18);
 }
 
 .mez-avatar-bg {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(10,7,5,.62), transparent 24% 76%, rgba(10,7,5,.7)),
-    radial-gradient(circle at 50% 38%, rgba(255,221,171,.32), transparent 34%),
-    radial-gradient(circle at 24% 28%, rgba(255,213,151,.42), transparent 20%),
-    radial-gradient(circle at 78% 24%, rgba(240,185,108,.31), transparent 18%),
-    linear-gradient(145deg, #3b2719 0%, #936739 48%, #1f1510 100%);
+    linear-gradient(90deg, rgba(10,7,5,.42), transparent 28% 72%, rgba(10,7,5,.48)),
+    radial-gradient(circle at 50% 33%, rgba(255,230,198,.42), transparent 36%),
+    radial-gradient(circle at 23% 24%, rgba(255,213,151,.32), transparent 20%),
+    radial-gradient(circle at 78% 24%, rgba(240,185,108,.22), transparent 18%),
+    linear-gradient(145deg, #3f2b22 0%, #8a6241 50%, #1b1310 100%);
 }
 
 .mez-avatar-bg::before,
@@ -195,14 +195,14 @@ const avatarCss = `
 
 .mez-avatar-shoulders {
   position: absolute;
-  left: 12%;
-  right: 12%;
-  bottom: -9%;
-  height: 25%;
-  border-radius: 48% 48% 0 0;
+  left: 10%;
+  right: 10%;
+  bottom: -10%;
+  height: 27%;
+  border-radius: 50% 50% 0 0;
   background:
-    radial-gradient(circle at 50% 10%, rgba(255,255,255,.96), rgba(240,232,218,.72) 46%, rgba(207,190,170,.42) 80%),
-    linear-gradient(90deg, rgba(255,255,255,.3), transparent, rgba(255,255,255,.24));
+    radial-gradient(circle at 50% 8%, rgba(255,255,255,.96), rgba(241,232,220,.76) 45%, rgba(178,190,203,.5) 82%),
+    linear-gradient(90deg, rgba(255,255,255,.34), transparent, rgba(255,255,255,.24));
   filter: drop-shadow(0 -2px 4px rgba(65, 35, 22, .18));
 }
 .mez-avatar-male .mez-avatar-shoulders {
@@ -213,12 +213,12 @@ const avatarCss = `
 
 .mez-avatar-neck {
   position: absolute;
-  left: 43%;
-  top: 70%;
-  width: 14%;
-  height: 16%;
+  left: 41.5%;
+  top: 69%;
+  width: 17%;
+  height: 17%;
   border-radius: 0 0 44% 44%;
-  background: linear-gradient(90deg, #dda98d, #ffd6be 44%, #cf9174);
+  background: linear-gradient(90deg, #d69a7e, #ffd0b7 46%, #bd7964);
   box-shadow: inset 0 8px 10px rgba(125,64,47,.18);
 }
 
@@ -246,18 +246,18 @@ const avatarCss = `
 
 .mez-avatar-face {
   position: absolute;
-  left: 24%;
-  top: 18%;
-  width: 52%;
-  height: 62%;
-  border-radius: 48% 48% 46% 46% / 42% 42% 56% 56%;
+  left: 23%;
+  top: 17%;
+  width: 54%;
+  height: 64%;
+  border-radius: 49% 49% 47% 47% / 42% 42% 58% 58%;
   background:
-    radial-gradient(circle at 36% 34%, rgba(255,255,255,.42), transparent 12%),
+    radial-gradient(circle at 36% 31%, rgba(255,255,255,.46), transparent 12%),
     radial-gradient(circle at 64% 34%, rgba(255,255,255,.28), transparent 12%),
-    radial-gradient(circle at 50% 66%, rgba(255,255,255,.2), transparent 28%),
-    radial-gradient(circle at 32% 56%, rgba(255,155,170,.2), transparent 15%),
-    radial-gradient(circle at 68% 56%, rgba(255,155,170,.2), transparent 15%),
-    linear-gradient(115deg, #f3b894, #ffd7c1 42%, #e49c82 100%);
+    radial-gradient(circle at 50% 68%, rgba(255,255,255,.2), transparent 30%),
+    radial-gradient(circle at 31% 56%, rgba(255,134,154,.24), transparent 15%),
+    radial-gradient(circle at 69% 56%, rgba(255,134,154,.24), transparent 15%),
+    linear-gradient(115deg, #efad89, #ffd4bd 43%, #d98b72 100%);
   box-shadow:
     inset -10px -10px 15px rgba(138, 73, 54, .17),
     inset 10px 4px 16px rgba(255,255,255,.32),
@@ -285,9 +285,9 @@ const avatarCss = `
 }
 .mez-avatar-male .mez-avatar-face {
   top: 20%;
-  height: 60%;
-  width: 50%;
-  left: 25%;
+  height: 61%;
+  width: 51%;
+  left: 24.5%;
   border-radius: 44% 44% 50% 50% / 38% 38% 62% 62%;
   clip-path: polygon(8% 11%, 92% 11%, 96% 58%, 78% 93%, 50% 100%, 22% 93%, 4% 58%);
   background:
@@ -326,10 +326,10 @@ const avatarCss = `
   pointer-events: none;
 }
 .mez-avatar-hair-female-front {
-  left: 17%;
-  top: 4%;
-  width: 66%;
-  height: 30%;
+  left: 15%;
+  top: 3.5%;
+  width: 70%;
+  height: 31%;
   border-radius: 48% 48% 16% 16%;
   background:
     repeating-linear-gradient(92deg, rgba(255,255,255,.7) 0 2px, rgba(211,224,249,.28) 2px 7px),
@@ -393,9 +393,9 @@ const avatarCss = `
 
 .mez-avatar-eye {
   position: absolute;
-  top: 39.5%;
-  width: 22%;
-  height: 18.5%;
+  top: 40%;
+  width: 21%;
+  height: 17.5%;
   border-radius: 52% 48% 50% 50%;
   background: #fff;
   box-shadow:
@@ -408,8 +408,8 @@ const avatarCss = `
 .mez-avatar-eye-left { left: 19%; }
 .mez-avatar-eye-right { right: 19%; }
 .mez-avatar-eye-female {
-  width: 25%;
-  height: 20.5%;
+  width: 24%;
+  height: 19.5%;
   border-top: 2px solid #211827;
 }
 .mez-avatar-eye-male {
@@ -464,7 +464,7 @@ const avatarCss = `
 
 .mez-avatar-brow {
   position: absolute;
-  top: 34%;
+  top: 34.5%;
   width: 21%;
   height: 3%;
   border-radius: 999px;
@@ -477,13 +477,25 @@ const avatarCss = `
 
 .mez-avatar-nose {
   position: absolute;
-  left: 47%;
+  left: 46.5%;
   top: 53%;
-  width: 7%;
-  height: 13%;
+  width: 8%;
+  height: 14%;
   border-radius: 54% 44% 50% 50%;
   background: linear-gradient(120deg, rgba(255,255,255,.12), rgba(165,85,63,.24));
   box-shadow: 2px 2px 0 rgba(151,75,56,.18);
+}
+.mez-avatar-nose::after {
+  content: "";
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 5%;
+  height: 22%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 25% 50%, rgba(90,45,36,.24) 0 18%, transparent 19%),
+    radial-gradient(circle at 75% 50%, rgba(90,45,36,.24) 0 18%, transparent 19%);
 }
 
 .mez-avatar-cheek {
@@ -500,23 +512,23 @@ const avatarCss = `
 
 .mez-avatar-mouth {
   position: absolute;
-  left: 28%;
-  top: 73%;
-  width: 44%;
+  left: 29%;
+  top: 72.5%;
+  width: 42%;
   height: var(--mouth-open);
   min-height: 3px;
   border: 2px solid #9f1239;
   border-top: 0;
   border-radius: 0 0 var(--mouth-radius) var(--mouth-radius);
-  background: #3b0b18;
+  background: linear-gradient(180deg, #5f1324, #2f0711);
   overflow: hidden;
   box-shadow: 0 2px 3px rgba(101, 39, 45, .18);
   transition: height .1s ease, border-radius .1s ease;
 }
 .mez-avatar-female .mez-avatar-mouth {
   top: 72%;
-  left: 26%;
-  width: 48%;
+  left: 27%;
+  width: 46%;
 }
 .mez-avatar-male .mez-avatar-mouth { border-color: #7f1d1d; }
 .mez-avatar-teeth {
@@ -557,13 +569,14 @@ const avatarCss = `
   bottom: 4%;
   padding: .18em .58em .24em;
   border-radius: 999px;
-  background: rgba(255, 250, 214, .94);
+  background: rgba(255, 250, 214, .84);
   color: #3f3412;
   font-family: var(--ff-mono, monospace);
   font-size: calc(var(--avatar-size) * .055);
   font-weight: 800;
   letter-spacing: 0;
   box-shadow: 0 2px 8px rgba(24, 18, 8, .18);
+  opacity: .82;
 }
 
 .mez-avatar-listening .mez-avatar-card,
