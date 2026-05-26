@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
-import { phpApi } from '../utils/api'
+import { phpApi, pyApi } from '../utils/api'
+import { activeProvider, aiErrorMessage, aiRequestConfig, hasProviderKey, providerModel } from '../utils/aiConfig'
 import { isSupabaseConfigured } from '../utils/supabase'
 import { createSupabaseCodeFile, listSupabaseCodeFiles, saveSupabaseCodeFile } from '../utils/supabaseBackend'
 
@@ -18,6 +19,9 @@ const AGENT_STEPS = [
 ]
 
 const WORKSPACE_META_KEY = 'mezomai_code_workspace_meta'
+const WORKSPACE_HANDLE_DB = 'mezomai_code_workspace_handles'
+const WORKSPACE_HANDLE_STORE = 'handles'
+const WORKSPACE_ROOT_HANDLE_KEY = 'workspace-root'
 const SKIPPED_LOCAL_DIRS = new Set(['.git', 'node_modules', 'dist', 'build', '.next', 'vendor', '__pycache__'])
 const TEXT_EXTENSIONS = new Set([
   'js', 'jsx', 'ts', 'tsx', 'py', 'php', 'css', 'scss', 'html', 'json', 'md', 'txt', 'env',
@@ -64,6 +68,7 @@ async function collectLocalFiles(directoryHandle, rootName, prefix = '', bucket 
       name,
       folder_path: prefix || rootName,
       path: `${rootName}/${path}`,
+      localPath: path,
       language: inferLanguage(name),
       content,
       local: true,
@@ -72,6 +77,67 @@ async function collectLocalFiles(directoryHandle, rootName, prefix = '', bucket 
   }
   return results
 }
+
+function openWorkspaceHandleDb() {
+  return new Promise((resolve, reject) => {
+    if (!('indexedDB' in window)) {
+      reject(new Error('Local folder restore needs IndexedDB support.'))
+      return
+    }
+    const request = indexedDB.open(WORKSPACE_HANDLE_DB, 1)
+    request.onupgradeneeded = () => {
+      request.result.createObjectStore(WORKSPACE_HANDLE_STORE)
+    }
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () => reject(request.error || new Error('Could not open local file handle storage.'))
+  })
+}
+
+async function readWorkspaceHandle() {
+  const db = await openWorkspaceHandleDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(WORKSPACE_HANDLE_STORE, 'readonly')
+    const request = tx.objectStore(WORKSPACE_HANDLE_STORE).get(WORKSPACE_ROOT_HANDLE_KEY)
+    request.onsuccess = () => resolve(request.result || null)
+    request.onerror = () => reject(request.error || new Error('Could not read local workspace handle.'))
+    tx.oncomplete = () => db.close()
+    tx.onerror = () => {
+      db.close()
+      reject(tx.error || new Error('Could not read local workspace handle.'))
+    }
+  })
+}
+
+async function saveWorkspaceHandle(handle) {
+  const db = await openWorkspaceHandleDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(WORKSPACE_HANDLE_STORE, 'readwrite')
+    tx.objectStore(WORKSPACE_HANDLE_STORE).put(handle, WORKSPACE_ROOT_HANDLE_KEY)
+    tx.oncomplete = () => {
+      db.close()
+      resolve()
+    }
+    tx.onerror = () => {
+      db.close()
+      reject(tx.error || new Error('Could not save local workspace handle.'))
+    }
+  })
+}
+
+async function ensureWorkspacePermission(handle, mode = 'readwrite', requestAccess = false) {
+  if (!handle?.queryPermission) return true
+  const options = { mode }
+  if (await handle.queryPermission(options) === 'granted') return true
+  if (!requestAccess || !handle.requestPermission) return false
+  return await handle.requestPermission(options) === 'granted'
+}
+
+const toStoredLocalMeta = (localFiles, rootName) => ({
+  rootName,
+  storage: 'local-file-system',
+  files: localFiles.map(({ handle: _handle, content: _content, ...file }) => file),
+  updatedAt: new Date().toISOString(),
+})
 
 async function writeLocalFile(file, content) {
   if (!file?.handle?.createWritable) throw new Error('Local file handle is not writable.')
@@ -91,7 +157,7 @@ const normalizeFile = (file) => ({
 })
 
 export default function CodePage() {
-  const { setAvatarState, avatarState } = useStore()
+  const { setAvatarState, avatarState, settings } = useStore()
   const [files, setFiles] = useState(DEFAULT_FILES)
   const [activeFileId, setActiveFileId] = useState(DEFAULT_FILES[0].id)
   const [openTabs, setOpenTabs] = useState([DEFAULT_FILES[0].id])
@@ -103,6 +169,13 @@ export default function CodePage() {
   const [bottomPanel, setBottomPanel] = useState('terminal')
   const [syncState, setSyncState] = useState('Local fallback')
   const [directoryHandle, setDirectoryHandle] = useState(null)
+  const [hasStoredWorkspace, setHasStoredWorkspace] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(WORKSPACE_META_KEY) || '{}').storage === 'local-file-system'
+    } catch {
+      return false
+    }
+  })
   const [workspaceRoot, setWorkspaceRoot] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(WORKSPACE_META_KEY) || '{}').rootName || 'MEZOMAI-WORKSPACE'
@@ -118,6 +191,7 @@ export default function CodePage() {
   }, [])
 
   const loadFiles = async () => {
+    if (await restoreLocalWorkspace(false)) return
     try {
       const { data } = await phpApi.get('/code/files')
       if (data.length === 0) {
@@ -152,6 +226,43 @@ export default function CodePage() {
         } catch {}
       }
       setSyncState('Local fallback')
+    }
+  }
+
+  const restoreLocalWorkspace = async (requestAccess = false) => {
+    let meta = {}
+    try {
+      meta = JSON.parse(localStorage.getItem(WORKSPACE_META_KEY) || '{}')
+    } catch {
+      meta = {}
+    }
+    if (meta.storage !== 'local-file-system') return false
+    setHasStoredWorkspace(true)
+    try {
+      const handle = await readWorkspaceHandle()
+      if (!handle) {
+        setSyncState('Reconnect local folder')
+        return false
+      }
+      const hasPermission = await ensureWorkspacePermission(handle, 'readwrite', requestAccess)
+      if (!hasPermission) {
+        setSyncState('Reconnect local folder')
+        setTerminalLogs(prev => [...prev, { type: 'info', text: `Click Reconnect to fetch files again from ${meta.rootName || 'your local folder'}.` }])
+        return false
+      }
+      const localFiles = await collectLocalFiles(handle, handle.name)
+      setDirectoryHandle(handle)
+      setWorkspaceRoot(handle.name)
+      setFiles(localFiles.length ? localFiles : DEFAULT_FILES)
+      setActiveFileId((localFiles[0] || DEFAULT_FILES[0]).id)
+      setOpenTabs([(localFiles[0] || DEFAULT_FILES[0]).id])
+      localStorage.setItem(WORKSPACE_META_KEY, JSON.stringify(toStoredLocalMeta(localFiles, handle.name)))
+      setTerminalLogs(prev => [...prev, { type: 'success', text: `Fetched ${localFiles.length} text files from local folder ${handle.name}.` }])
+      setSyncState(localFiles.length ? 'Fetched from local folder' : 'Local folder empty')
+      return true
+    } catch (error) {
+      setSyncState(error.message || 'Local folder fetch failed')
+      return false
     }
   }
 
@@ -279,18 +390,16 @@ export default function CodePage() {
     try {
       const handle = await window.showDirectoryPicker({ mode: 'readwrite' })
       const localFiles = await collectLocalFiles(handle, handle.name)
+      await saveWorkspaceHandle(handle)
       setDirectoryHandle(handle)
+      setHasStoredWorkspace(true)
       setWorkspaceRoot(handle.name)
       if (localFiles.length) {
         setFiles(localFiles)
         setActiveFileId(localFiles[0].id)
         setOpenTabs([localFiles[0].id])
       }
-      localStorage.setItem(WORKSPACE_META_KEY, JSON.stringify({
-        rootName: handle.name,
-        files: localFiles.map(({ handle: _handle, content: _content, ...file }) => file),
-        updatedAt: new Date().toISOString(),
-      }))
+      localStorage.setItem(WORKSPACE_META_KEY, JSON.stringify(toStoredLocalMeta(localFiles, handle.name)))
       setTerminalLogs(prev => [...prev, { type: 'success', text: `Opened local folder ${handle.name}. Loaded ${localFiles.length} text files.` }])
       setSyncState(localFiles.length ? 'Local folder mounted' : 'Local folder empty')
     } catch (error) {
@@ -325,29 +434,55 @@ export default function CodePage() {
     }
   }
 
-  const handleAiAction = (action) => {
+  const handleAiAction = async (action) => {
     setAvatarState('thinking')
-    setAiResponse('Agent is scanning the active editor, terminal output, and project hints...')
-    setTimeout(() => {
-      if (action === 'explain') {
-        setAiResponse(`Summary for ${activeFile.name}\n\nThis ${activeFile.language} file is persisted through PHP. Use Run to execute it in the Python FastAPI sandbox via /code/run.`)
-      } else if (action === 'fix') {
-        setBottomPanel('problems')
-        setAiResponse(`Bug sweep completed\n\nNo local syntax analysis is blocking. Run the file to validate in the real sandbox.`)
-      } else if (action === 'refactor') {
-        setIsDiffMode(true)
-        setAiResponse(`Diff preview opened for ${activeFile.name}.`)
-      } else {
-        setAiResponse(`Generated snippet for ${activeFile.name}\n\nconsole.log("Telemetry check active...");`)
-      }
+    setAiResponse('Agent is scanning the active editor, terminal output, and project hints with your configured AI provider...')
+    const provider = activeProvider(settings)
+    if (!hasProviderKey(settings)) {
+      setAiResponse(`Add a ${provider} API key in Settings before using the Code agent.\n\nThe agent uses the same provider setup as Chat. Current model target: ${providerModel(settings)}.`)
       setAvatarState('idle')
-    }, 700)
+      return
+    }
+
+    const actionPrompts = {
+      explain: 'Explain the file clearly. Include purpose, key logic, risks, and suggested next steps.',
+      fix: 'Find bugs, syntax errors, runtime risks, and missing validation. Give a focused patch plan and corrected snippets when helpful.',
+      refactor: 'Suggest a refactor that improves readability and maintainability. Keep behavior the same unless you clearly mark a change.',
+      generate: aiInput.trim() || 'Generate a useful code snippet or improvement for this file.',
+    }
+
+    try {
+      const { data } = await pyApi.post('/completion', {
+        system_prompt: settings.systemPrompt || `You are ${settings.avatarName || 'ARIA'}, a senior coding assistant inside MEZOMAI Code Studio.`,
+        prompt: [
+          `Action: ${action}`,
+          `Instruction: ${actionPrompts[action]}`,
+          `Workspace root: ${workspaceRoot}`,
+          `File: ${activeFile.path || activeFile.name}`,
+          `Language: ${activeFile.language || activeFile.lang}`,
+          'Terminal context:',
+          terminalLogs.slice(-8).map(log => `[${log.type}] ${log.text}`).join('\n') || 'No terminal output yet.',
+          'Current file content:',
+          '```',
+          activeFile.content || '',
+          '```',
+        ].join('\n\n'),
+        ...aiRequestConfig(settings),
+      })
+      if (action === 'fix') setBottomPanel('problems')
+      if (action === 'refactor') setIsDiffMode(true)
+      setAiResponse(data.response || 'The AI provider returned an empty response.')
+    } catch (error) {
+      setAiResponse(`Code agent request failed.\n\nProvider: ${provider}\nModel: ${providerModel(settings)}\nError: ${aiErrorMessage(error)}`)
+    } finally {
+      setAvatarState('idle')
+    }
   }
 
   return (
     <div style={workspace} className="fade-in">
       <ActivityRail activity={activity} setActivity={setActivity}/>
-      <SidePanel activity={activity} files={files} activeFileId={activeFileId} openFile={openFile} createFile={createFile} openLocalFolder={openLocalFolder} syncState={syncState} workspaceRoot={workspaceRoot}/>
+      <SidePanel activity={activity} files={files} activeFileId={activeFileId} openFile={openFile} createFile={createFile} openLocalFolder={openLocalFolder} reconnectLocalFolder={() => restoreLocalWorkspace(true)} syncState={syncState} workspaceRoot={workspaceRoot} hasStoredWorkspace={hasStoredWorkspace}/>
       <main style={mainArea}>
         <TopBar activeFile={activeFile} runCode={runCode} openDiff={() => setIsDiffMode(true)} syncState={syncState} workspaceRoot={workspaceRoot}/>
         <TabBar files={files} openTabs={openTabs} setOpenTabs={setOpenTabs} activeFileId={activeFileId} setActiveFileId={setActiveFileId}/>
@@ -365,7 +500,7 @@ function ActivityRail({ activity, setActivity }) {
   return <aside style={activityRail}>{items.map(([id, label]) => <button key={id} onClick={() => setActivity(id)} title={id} style={railBtn(activity === id)}>{label}</button>)}</aside>
 }
 
-function SidePanel({ activity, files, activeFileId, openFile, createFile, openLocalFolder, syncState, workspaceRoot }) {
+function SidePanel({ activity, files, activeFileId, openFile, createFile, openLocalFolder, reconnectLocalFolder, syncState, workspaceRoot, hasStoredWorkspace }) {
   return (
     <aside style={sidePanel}>
       <div style={panelTitle}>{activity === 'explorer' ? 'Explorer' : activity === 'search' ? 'Search' : activity === 'source' ? 'Source Control' : 'Agent Context'}</div>
@@ -375,6 +510,9 @@ function SidePanel({ activity, files, activeFileId, openFile, createFile, openLo
             <button onClick={openLocalFolder} style={smallBtn}>Open Folder</button>
             <button onClick={createFile} style={smallBtn}>New File</button>
           </div>
+          {hasStoredWorkspace && (
+            <button onClick={reconnectLocalFolder} style={smallBtn}>Reconnect Folder</button>
+          )}
           <div style={folderName}>{workspaceRoot}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             {files.map(file => <button key={file.id} onClick={() => openFile(file.id)} style={fileRow(activeFileId === file.id)}><span style={fileBadge}>{file.language.slice(0, 2).toUpperCase()}</span><span>{file.name}</span></button>)}

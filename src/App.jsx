@@ -9,11 +9,10 @@ import AnalyticsPage from './pages/AnalyticsPage'
 import SettingsPage from './pages/SettingsPage'
 import LoginPage from './pages/LoginPage'
 import { phpApi } from './utils/api'
-import { isSupabaseConfigured } from './utils/supabase'
-import { hydrateSupabaseAuth } from './utils/supabaseBackend'
 
 export default function App() {
   const { page, token, theme, setUser, updateSettings } = useStore()
+  const isVerifyRoute = typeof window !== 'undefined' && window.location.pathname === '/verify-email'
 
   // Apply theme class to document root for CSS variables
   useEffect(() => {
@@ -21,27 +20,6 @@ export default function App() {
   }, [theme])
 
   useEffect(() => {
-    if (token?.startsWith('supabase:')) {
-      hydrateSupabaseAuth()
-        .then((data) => {
-          if (!data) return
-          setUser(data.user)
-          updateSettings(userToSettings(data.user))
-        })
-        .catch(() => {})
-      return
-    }
-    if (!token && isSupabaseConfigured) {
-      hydrateSupabaseAuth()
-        .then((data) => {
-          if (!data) return
-          useStore.getState().setToken(data.token)
-          setUser(data.user)
-          updateSettings(userToSettings(data.user))
-        })
-        .catch(() => {})
-      return
-    }
     if (!token || token.startsWith('demo_')) return
     phpApi.get('/auth/user')
       .then(({ data }) => {
@@ -53,7 +31,7 @@ export default function App() {
   }, [token, setUser, updateSettings])
 
   // Login Gate
-  if (!token) {
+  if (!token || isVerifyRoute) {
     return <LoginPage />
   }
 

@@ -54,12 +54,21 @@ async def join_meeting_bot(req: MeetingBotJoinRequest):
         raise HTTPException(status_code=502, detail=f"Meeting bot service request failed: {exc}") from exc
 
     if response.status_code >= 400:
+        details = response.text
+        if response.status_code == 404 and "Not Found" in details:
+            return {
+                "configured": True,
+                "provider": "mezomai-selfhosted",
+                "status": "failed",
+                "message": "Meeting bot URL is reachable, but /bots/join was not found. Set MEETING_BOT_API_URL to the deployed meeting-bot-service root, not the frontend app URL or Python API URL.",
+                "details": details,
+            }
         return {
             "configured": True,
             "provider": "mezomai-selfhosted",
             "status": "failed",
             "message": "Meeting bot service rejected the join request.",
-            "details": response.text,
+            "details": details,
         }
 
     data = response.json()

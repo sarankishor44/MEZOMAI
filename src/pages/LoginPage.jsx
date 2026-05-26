@@ -1,8 +1,6 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { phpApi } from '../utils/api'
-import { isSupabaseConfigured } from '../utils/supabase'
-import { supabaseLogin, supabaseRegister } from '../utils/supabaseBackend'
 
 export default function LoginPage() {
   const { setToken, setUser, updateSettings, theme, toggleTheme } = useStore()
@@ -11,17 +9,38 @@ export default function LoginPage() {
   const [form, setForm] = useState({ username: '', email: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [verifying, setVerifying] = useState(false)
   const [demoNotice, setDemoNotice] = useState(false)
-  const [registerCooldownUntil, setRegisterCooldownUntil] = useState(0)
   const compact = typeof window !== 'undefined' && window.innerWidth < 980
+  const isVerifyRoute = typeof window !== 'undefined' && window.location.pathname === '/verify-email'
 
-  const submit = async () => {
-    if (mode === 'register' && Date.now() < registerCooldownUntil) {
-      setError('Supabase email limit is cooling down. Wait a few minutes, or enable Resend SMTP in Supabase Auth.')
+  useEffect(() => {
+    if (!isVerifyRoute) return
+    const token = new URLSearchParams(window.location.search).get('token')
+    if (!token) {
+      setError('Verification link is missing its token.')
       return
     }
+    setVerifying(true)
+    phpApi.post('/auth/verify-email', { token })
+      .then(({ data }) => {
+        if (!data?.token || !data?.user) throw new Error(data?.message || 'Verification failed.')
+        setToken(data.token)
+        setUser(data.user)
+        updateSettings(userToSettings(data.user))
+        window.history.replaceState({}, '', '/')
+      })
+      .catch((e) => {
+        setError(e.response?.data?.error || e.message || 'Verification failed.')
+      })
+      .finally(() => setVerifying(false))
+  }, [isVerifyRoute, setToken, setUser, updateSettings])
+
+  const submit = async () => {
     setLoading(true)
     setError('')
+    setNotice('')
     setDemoNotice(false)
     const loginId = (form.email || form.username || '').trim()
     if (mode === 'login' && loginId.toLowerCase() === 'demo' && form.password === 'demo') {
@@ -31,32 +50,17 @@ export default function LoginPage() {
     try {
       const endpoint = mode === 'login' ? '/auth/login' : '/auth/register'
       const { data } = await phpApi.post(endpoint, form)
+      if (mode === 'register' && data?.requires_verification) {
+        setNotice(data.message || 'Account created. Check your email for the verification link.')
+        setMode('login')
+        setLoading(false)
+        return
+      }
       if (!data?.token || !data?.user) throw new Error('PHP auth endpoint did not return a session.')
       setToken(data.token)
       setUser(data.user)
       updateSettings(userToSettings(data.user))
     } catch (e) {
-      if (isSupabaseConfigured) {
-        try {
-          const authEmail = form.email.trim()
-          if (!authEmail.includes('@')) throw new Error('Use an email address for Supabase login, or use demo / demo.')
-          const data = mode === 'login'
-            ? await supabaseLogin(authEmail, form.password)
-            : await supabaseRegister({ email: authEmail, password: form.password, username: form.username })
-          if (!data.token) throw new Error('Check your email to confirm the Supabase account before signing in.')
-          setToken(data.token)
-          setUser(data.user)
-          updateSettings(userToSettings(data.user))
-          setLoading(false)
-          return
-        } catch (supabaseError) {
-          const message = formatSupabaseAuthError(supabaseError)
-          if (message.includes('email limit')) setRegisterCooldownUntil(Date.now() + 5 * 60 * 1000)
-          setError(message)
-          setLoading(false)
-          return
-        }
-      }
       const demoAllowed = import.meta.env.VITE_DEMO_MODE === 'true' || import.meta.env.DEV
       if (!demoAllowed) {
         setError(e.response?.data?.error || 'Login failed. Check backend and credentials.')
@@ -68,6 +72,25 @@ export default function LoginPage() {
       setTimeout(() => {
         loginDemoUser(form.username || form.email.split('@')[0] || 'Operator', form.email || 'operator@mezomai.com')
       }, 700)
+    }
+  }
+
+  const resendVerification = async () => {
+    const email = form.email.trim()
+    if (!email) {
+      setError('Enter your email first so we can resend the verification link.')
+      return
+    }
+    setLoading(true)
+    setError('')
+    setNotice('')
+    try {
+      const { data } = await phpApi.post('/auth/resend-verification', { email })
+      setNotice(data.message || 'Verification email sent.')
+    } catch (e) {
+      setError(e.response?.data?.error || 'Could not send verification email.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -87,6 +110,19 @@ export default function LoginPage() {
     updateSettings(userToSettings(mockUser))
     setDemoNotice(username === 'demo')
     setLoading(false)
+  }
+
+  if (isVerifyRoute) {
+    return (
+      <div style={pageWrap}>
+        <section style={{ ...authPanel(true, true), maxWidth: 460, margin: '18vh auto 0' }}>
+          <div style={eyebrow}>Email verification</div>
+          <h1 style={{ ...headline, fontSize: 34, lineHeight: 1.1 }}>Confirming your account</h1>
+          <p style={subcopy}>{verifying ? 'Checking your confirmation link...' : error || 'Email verified. Opening your workspace...'}</p>
+          {error && <button onClick={() => { window.history.replaceState({}, '', '/'); window.location.reload() }} style={secondaryCta}>Back to Login</button>}
+        </section>
+      </div>
+    )
   }
 
   return (
@@ -172,32 +208,23 @@ export default function LoginPage() {
           </div>
 
           {error && <div style={{ marginTop: 12, fontSize: 12, color: 'var(--red)', fontFamily: 'var(--ff-mono)' }}>{error}</div>}
+          {notice && <div style={noticeStyle}>{notice}</div>}
           {demoNotice && <div style={noticeStyle}>Demo workspace opened. Demo ID: demo, password: demo.</div>}
 
           <button onClick={submit} disabled={loading} className="gold-glow-btn" style={submitBtn}>
-            {loading ? 'Processing...' : mode === 'login' ? 'Login to Desktop' : 'Create Desktop'}
+            {loading ? 'Processing...' : mode === 'login' ? 'Login to Desktop' : 'Create Account'}
           </button>
+          {mode === 'login' && (
+            <button onClick={resendVerification} disabled={loading} style={resendBtn}>
+              Resend verification email
+            </button>
+          )}
 
           <p style={helpText}>Demo ID: `demo`, password: `demo`.</p>
         </section>
       </main>
     </div>
   )
-}
-
-function formatSupabaseAuthError(error) {
-  const raw = error?.message || 'Supabase authentication failed.'
-  const lower = raw.toLowerCase()
-  if (lower.includes('email rate limit')) {
-    return 'Supabase email limit exceeded. Wait a few minutes, or connect Resend as custom SMTP in Supabase Auth.'
-  }
-  if (lower.includes('signup is disabled')) {
-    return 'Signup is disabled in Supabase Auth settings.'
-  }
-  if (lower.includes('email not confirmed') || lower.includes('confirm')) {
-    return raw
-  }
-  return raw
 }
 
 function userToSettings(user = {}) {
@@ -323,4 +350,5 @@ const tabStyle = (active) => ({ flex: 1, padding: '10px 0', border: 'none', bord
 const inputStyle = { width: '100%', fontSize: 13, borderRadius: 14, padding: '12px 14px' }
 const noticeStyle = { marginTop: 12, fontSize: 11, color: 'var(--t2)', fontFamily: 'var(--ff-mono)' }
 const submitBtn = { width: '100%', marginTop: 20, padding: '13px 0', border: 'none', borderRadius: 999, fontFamily: 'var(--ff-display)', fontSize: 14, fontWeight: 900, opacity: 1 }
+const resendBtn = { width: '100%', marginTop: 10, border: '1px solid var(--b1)', background: 'color-mix(in srgb, var(--bg2) 84%, transparent)', color: 'var(--t2)', padding: '11px 0', borderRadius: 999, fontFamily: 'var(--ff-display)', fontSize: 12, fontWeight: 800 }
 const helpText = { marginTop: 18, fontSize: 11, color: 'var(--t3)', textAlign: 'center', lineHeight: 1.6 }

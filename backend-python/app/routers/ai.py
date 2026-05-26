@@ -53,8 +53,10 @@ async def generate_completion(req: CompletionRequest):
             xai_key=req.xai_key,
         )
         return {"response": response}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail="AI completion failed.")
+        raise HTTPException(status_code=502, detail=f"AI completion failed: {type(e).__name__}")
 
 @router.post("/summarize")
 async def summarize_meeting(req: SummarizeRequest):

@@ -54,6 +54,16 @@ async def health():
     }
 
 
+@app.get("/")
+async def root():
+    return {
+        "status": "online",
+        "service": "mezomai-meeting-bot",
+        "message": "Use POST /bots/join to invite the meeting bot, or GET /health for deployment checks.",
+        "active_sessions": len(SESSIONS),
+    }
+
+
 @app.post("/bots/join")
 async def join_bot(
     req: JoinBotRequest,

@@ -26,6 +26,8 @@ Route::get('/health', function () {
 
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/verify-email', [AuthController::class, 'verifyEmail']);
+Route::post('/auth/resend-verification', [AuthController::class, 'resendVerification']);
 
 Route::middleware('auth.jwt')->group(function () {
     Route::get('/auth/user', [AuthController::class, 'user']);

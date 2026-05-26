@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
 import { phpApi, pyApi } from '../utils/api'
+import { activeProvider, aiErrorMessage, aiRequestConfig, hasProviderKey, providerModel } from '../utils/aiConfig'
 import { isSupabaseConfigured } from '../utils/supabase'
 import {
   createSupabaseChatSession,
@@ -12,7 +13,6 @@ import {
 
 const MODES = ['Friendly', 'Developer', 'Coach', 'Professional']
 const PROMPTS = ['Review this idea', 'Draft a release note', 'Explain the code', 'Create meeting agenda']
-
 const toUiMessage = (message) => ({
   id: message.uuid || message.id || Date.now(),
   role: message.role,
@@ -149,33 +149,26 @@ export default function ChatPage() {
 
   const generateReply = async (history, userText) => {
     const systemPrompt = settings.systemPrompt || `You are ${settings.avatarName}, a ${selectedMode.toLowerCase()} AI assistant.`
+    const provider = activeProvider(settings)
+    if (!hasProviderKey(settings)) {
+      setSyncState(`Add ${provider} API key in Settings`)
+      return `I need a ${provider} API key before I can generate live AI text. Open Settings, choose ${provider}, paste the key, save it, then send this again.`
+    }
     try {
       const { data } = await pyApi.post('/completion', {
         system_prompt: systemPrompt,
         prompt: memoryOn
           ? history.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n')
           : userText,
-        model: settings.model,
-        provider: settings.activeProvider || 'anthropic',
-        api_key: settings.apiKey || undefined,
-        openai_key: settings.openAiKey || undefined,
-        gemini_key: settings.geminiKey || undefined,
-        openrouter_key: settings.openRouterKey || undefined,
-        deepseek_key: settings.deepSeekKey || undefined,
-        groq_key: settings.groqKey || undefined,
-        mistral_key: settings.mistralKey || undefined,
-        xai_key: settings.xAiKey || undefined,
+        ...aiRequestConfig(settings),
       })
       setSyncState('AI response from Python backend')
       return data.response
-    } catch {
-      setSyncState('AI backend unavailable; local fallback')
+    } catch (error) {
+      const detail = aiErrorMessage(error)
+      setSyncState('AI request failed')
+      return `The AI request did not complete.\n\nProvider: ${provider}\nModel: ${providerModel(settings)}\nError: ${detail}\n\nCheck that your Python backend is deployed/running and that the ${provider} API key in Settings is valid.`
     }
-
-    const text = userText.toLowerCase()
-    if (text.includes('code')) return 'Open Code Studio. Files now load from PHP and Run posts to /code/run for the Python sandbox.'
-    if (text.includes('meeting')) return 'Meet Rooms has camera preview, browser transcript, tasks, and generated notes.'
-    return `I am ${settings.avatarName || 'ARIA'}. Chat sessions and messages now persist through the PHP backend when it is available.`
   }
 
   const speakText = (text) => {
@@ -280,7 +273,7 @@ export default function ChatPage() {
             <div style={emptyState}>
               <div style={emptyOrb}>AI</div>
               <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 22 }}>What should we work on?</h2>
-              <p style={{ color: 'var(--t3)', maxWidth: 520, lineHeight: 1.6 }}>Messages are saved through PHP locally or Supabase on Vercel, so refresh keeps your chat.</p>
+              <p style={{ color: 'var(--t3)', maxWidth: 520, lineHeight: 1.6 }}>Messages save through PHP, and replies are generated through your selected provider API key from Settings.</p>
             </div>
           )}
           {messages.map(msg => <MessageBubble key={msg.id} msg={msg} avatarName={settings.avatarName}/>)}

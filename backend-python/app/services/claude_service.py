@@ -30,16 +30,16 @@ class ClaudeService:
     ) -> str:
         provider = (provider or "anthropic").lower()
         if provider == "openai":
-            return await self._openai_completion(system_prompt, prompt, model, openai_key)
+            return await self._openai_completion(system_prompt, prompt, self._model_for_provider(provider, model), openai_key)
         if provider == "gemini":
-            return await self._gemini_completion(system_prompt, prompt, model, gemini_key)
+            return await self._gemini_completion(system_prompt, prompt, self._model_for_provider(provider, model), gemini_key)
         if provider == "openrouter":
             return await self._openai_compatible_completion(
                 "https://openrouter.ai/api/v1/chat/completions",
                 openrouter_key or os.getenv("OPENROUTER_API_KEY"),
                 system_prompt,
                 prompt,
-                model or "openai/gpt-4o-mini",
+                self._model_for_provider(provider, model),
                 {"HTTP-Referer": os.getenv("APP_URL", "https://mezomai.vercel.app"), "X-Title": "MEZOMAI"},
             )
         if provider == "deepseek":
@@ -48,7 +48,7 @@ class ClaudeService:
                 deepseek_key or os.getenv("DEEPSEEK_API_KEY"),
                 system_prompt,
                 prompt,
-                model or "deepseek-chat",
+                self._model_for_provider(provider, model),
             )
         if provider == "groq":
             return await self._openai_compatible_completion(
@@ -56,7 +56,7 @@ class ClaudeService:
                 groq_key or os.getenv("GROQ_API_KEY"),
                 system_prompt,
                 prompt,
-                model or "llama-3.1-8b-instant",
+                self._model_for_provider(provider, model),
             )
         if provider == "mistral":
             return await self._openai_compatible_completion(
@@ -64,7 +64,7 @@ class ClaudeService:
                 mistral_key or os.getenv("MISTRAL_API_KEY"),
                 system_prompt,
                 prompt,
-                model or "mistral-small-latest",
+                self._model_for_provider(provider, model),
             )
         if provider == "xai":
             return await self._openai_compatible_completion(
@@ -72,9 +72,39 @@ class ClaudeService:
                 xai_key or os.getenv("XAI_API_KEY"),
                 system_prompt,
                 prompt,
-                model or "grok-2-latest",
+                self._model_for_provider(provider, model),
             )
-        return await self._anthropic_completion(system_prompt, prompt, model, api_key)
+        return await self._anthropic_completion(system_prompt, prompt, self._model_for_provider("anthropic", model), api_key)
+
+    def _model_for_provider(self, provider: str, model: str = None) -> str:
+        provider = (provider or "anthropic").lower()
+        defaults = {
+            "anthropic": "claude-3-5-sonnet-20241022",
+            "openai": "gpt-4o-mini",
+            "gemini": "gemini-1.5-flash",
+            "openrouter": "openai/gpt-4o-mini",
+            "deepseek": "deepseek-chat",
+            "groq": "llama-3.1-8b-instant",
+            "mistral": "mistral-small-latest",
+            "xai": "grok-2-latest",
+        }
+        if not model:
+            return defaults.get(provider, defaults["anthropic"])
+        lower_model = model.lower()
+        provider_prefixes = {
+            "anthropic": ("claude",),
+            "openai": ("gpt", "o1", "o3", "o4"),
+            "gemini": ("gemini",),
+            "openrouter": ("openai/", "anthropic/", "google/", "meta-llama/", "mistralai/", "deepseek/"),
+            "deepseek": ("deepseek",),
+            "groq": ("llama", "mixtral", "gemma", "qwen"),
+            "mistral": ("mistral", "ministral", "codestral"),
+            "xai": ("grok",),
+        }
+        prefixes = provider_prefixes.get(provider)
+        if prefixes and not lower_model.startswith(prefixes):
+            return defaults.get(provider, defaults["anthropic"])
+        return model
 
     async def _anthropic_completion(self, system_prompt: str, prompt: str, model: str = None, api_key: str = None) -> str:
         client = self._anthropic_client(api_key)

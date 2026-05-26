@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
 import { createWebSocket, pyApi } from '../utils/api'
+import { activeProvider, aiErrorMessage, aiRequestConfig, hasProviderKey, providerModel } from '../utils/aiConfig'
 
 function detectPlatform(value) {
   const text = (value || '').toLowerCase()
@@ -104,6 +105,31 @@ export default function MeetingsPage() {
     }
   }
 
+  const generateMeetingReply = async (userText) => {
+    const provider = activeProvider(settings)
+    if (!hasProviderKey(settings)) {
+      return `I captured that. Add a ${provider} API key in Settings if you want live AI meeting responses.`
+    }
+    const recentTranscript = [...transcript.slice(-8), { speaker: 'You', text: userText }]
+      .map(line => `${line.speaker}: ${line.text}`)
+      .join('\n')
+    try {
+      const { data } = await pyApi.post('/completion', {
+        system_prompt: settings.systemPrompt || `You are ${settings.avatarName || 'ARIA'}, an AI meeting companion. Respond briefly, capture decisions, and surface action items.`,
+        prompt: [
+          `Meeting platform: ${platform.name}`,
+          'Recent transcript:',
+          recentTranscript,
+          'Reply in 1-2 concise sentences as the live meeting companion.',
+        ].join('\n\n'),
+        ...aiRequestConfig(settings),
+      })
+      return data.response || 'I captured that and will include it in the meeting notes.'
+    } catch (error) {
+      return `I captured that, but the live AI response failed (${provider} / ${providerModel(settings)}): ${aiErrorMessage(error)}`
+    }
+  }
+
   const startSpeechRecognition = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
@@ -114,22 +140,22 @@ export default function MeetingsPage() {
     recognition.continuous = true
     recognition.interimResults = false
     recognition.lang = 'en-US'
-    recognition.onresult = (event) => {
+    recognition.onresult = async (event) => {
       const result = event.results[event.results.length - 1]
       const text = result?.[0]?.transcript?.trim()
       if (!text) return
       const line = { speaker: 'You', text, time: nowLabel() }
       addTranscriptLine(line)
       wsRef.current?.send(JSON.stringify({ type: 'transcript', speaker: 'You', text }))
-      window.setTimeout(() => {
-        addTranscriptLine({
-          speaker: settings.avatarName,
-          text: `I captured that. I will track it as meeting context and prepare notes for ${platform.name}.`,
-          time: nowLabel(),
-        })
-        useStore.setState({ avatarState: 'talking' })
-        window.setTimeout(() => useStore.setState({ avatarState: 'idle' }), 1800)
-      }, 700)
+      useStore.setState({ avatarState: 'thinking' })
+      const reply = await generateMeetingReply(text)
+      addTranscriptLine({
+        speaker: settings.avatarName,
+        text: reply,
+        time: nowLabel(),
+      })
+      useStore.setState({ avatarState: 'talking' })
+      window.setTimeout(() => useStore.setState({ avatarState: 'idle' }), 1800)
     }
     recognition.onend = () => setListening(false)
     recognition.onerror = () => setListening(false)
@@ -188,10 +214,15 @@ export default function MeetingsPage() {
       if (data.status === 'joining') {
         setBotJoinStatus(`${settings.avatarName} is joining ${platform.name}. Bot ID: ${data.bot_id || 'pending'}.`)
       } else {
-        setBotJoinStatus(data.message || 'Meeting bot provider is not configured. Use the in-app companion room for now.')
+        setBotJoinStatus(data.message || data.details || 'Meeting bot provider is not configured. Use the in-app companion room for now.')
       }
     } catch (e) {
-      setBotJoinStatus(e.response?.data?.message || 'Could not reach the Python meeting-bot backend.')
+      const detail = e.response?.data?.detail
+      if (detail === 'Not Found') {
+        setBotJoinStatus('Meeting bot route was not found. Set the Python API URL to the FastAPI backend that exposes /ai/meeting-bot/join, and set MEETING_BOT_API_URL there to the meeting-bot-service root.')
+        return
+      }
+      setBotJoinStatus(e.response?.data?.message || detail || 'Could not reach the Python meeting-bot backend.')
     }
   }
 
@@ -222,16 +253,7 @@ export default function MeetingsPage() {
       const { data } = await pyApi.post('/summarize', {
         transcript: mapped,
         bot_name: settings.avatarName,
-        model: settings.model,
-        provider: settings.activeProvider || 'anthropic',
-        api_key: settings.apiKey || undefined,
-        openai_key: settings.openAiKey || undefined,
-        gemini_key: settings.geminiKey || undefined,
-        openrouter_key: settings.openRouterKey || undefined,
-        deepseek_key: settings.deepSeekKey || undefined,
-        groq_key: settings.groqKey || undefined,
-        mistral_key: settings.mistralKey || undefined,
-        xai_key: settings.xAiKey || undefined,
+        ...aiRequestConfig(settings),
       })
       setMeetingNotes({
         summary: data.summary,
