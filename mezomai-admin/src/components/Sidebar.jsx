@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Settings, Activity } from 'lucide-react';
+import { LayoutDashboard, LogOut, Users, Settings, Activity } from 'lucide-react';
 
-const Sidebar = () => {
+const Sidebar = ({ onLogout }) => {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -38,6 +38,10 @@ const Sidebar = () => {
           Settings
         </NavLink>
       </nav>
+      <button className="nav-link logout-link" onClick={onLogout}>
+        <LogOut />
+        Logout
+      </button>
     </aside>
   );
 };

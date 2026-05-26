@@ -8,10 +8,6 @@ const fields = [
   ['supabaseUrl', 'Supabase URL', 'https://your-project.supabase.co', Database],
   ['supabaseAnonKey', 'Supabase publishable key', 'sb_publishable_...', KeyRound],
   ['sentryDsn', 'Sentry DSN', 'https://...@...ingest.sentry.io/...', ShieldCheck],
-  ['anthropicKey', 'Anthropic API key', 'sk-ant-api03-...', KeyRound],
-  ['openAiKey', 'OpenAI API key', 'sk-...', KeyRound],
-  ['geminiKey', 'Gemini API key', 'AIza...', KeyRound],
-  ['elevenLabsKey', 'ElevenLabs API key', 'voice key...', KeyRound],
   ['resendApiKey', 'Resend API key', 're_...', KeyRound],
   ['resendFrom', 'Resend From', 'MEZOMAI <no-reply@yourdomain.com>', KeyRound],
   ['meetingBotProvider', 'Meeting Bot Provider', 'meetingbaas', Server],
@@ -49,7 +45,7 @@ export default function Settings() {
       <section className="admin-grid">
         <div className="cyber-panel config-panel">
           <h2>API Routing</h2>
-          <p className="muted-copy">User settings no longer expose backend URLs. Admin controls the routes here.</p>
+          <p className="muted-copy">Admin controls backend routes and platform deployment secrets. AI provider keys are managed by each user in the main app settings.</p>
           <div className="config-form">
             {fields.map(([key, label, placeholder, Icon]) => (
               <label key={key} className="config-field">

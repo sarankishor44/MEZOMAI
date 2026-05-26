@@ -58,6 +58,11 @@ export default function SettingsPage() {
         voice_pitch: settings.voicePitch,
         model: settings.model,
         activeProvider: settings.activeProvider,
+        apiKey: settings.apiKey,
+        openAiKey: settings.openAiKey,
+        geminiKey: settings.geminiKey,
+        elevenLabsKey: settings.elevenLabsKey,
+        dailyKey: settings.dailyKey,
       })
       setDbStatus('Saved to DB')
     } catch (e) {
@@ -182,6 +187,20 @@ export default function SettingsPage() {
         </section>
 
         <section style={panel}>
+          <SectionTitle title="AI API Keys" sub="Save your own provider keys for chat, summaries, voice, and meeting integrations."/>
+          <SecretRow label="Anthropic" value={settings.apiKey || ''} onChange={value => updateSettings({ apiKey: value })} placeholder="sk-ant-api03-..." />
+          <SecretRow label="OpenAI" value={settings.openAiKey || ''} onChange={value => updateSettings({ openAiKey: value })} placeholder="sk-..." />
+          <SecretRow label="Gemini" value={settings.geminiKey || ''} onChange={value => updateSettings({ geminiKey: value })} placeholder="AIza..." />
+          <SecretRow label="ElevenLabs" value={settings.elevenLabsKey || ''} onChange={value => updateSettings({ elevenLabsKey: value })} placeholder="voice key..." />
+          <SecretRow label="Daily" value={settings.dailyKey || ''} onChange={value => updateSettings({ dailyKey: value })} placeholder="daily API key..." />
+          {Array.isArray(settings.keyHints) && settings.keyHints.length > 0 && (
+            <div style={hintBox}>
+              Saved keys: {settings.keyHints.map(key => `${key.provider} ${key.key_hint || ''}`).join(', ')}
+            </div>
+          )}
+        </section>
+
+        <section style={panel}>
           <SectionTitle title="Backend API URLs" sub="Connect this frontend to deployed PHP and Python backends."/>
           <Row label="PHP API">
             <input
@@ -241,6 +260,14 @@ function SectionTitle({ title, sub }) {
 
 function Row({ label, children }) {
   return <div style={row}><div style={{ fontWeight: 800, color: 'var(--t2)' }}>{label}</div>{children}</div>
+}
+
+function SecretRow({ label, value, onChange, placeholder }) {
+  return (
+    <Row label={label}>
+      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} type="password" autoComplete="off" style={{ ...input, width: '100%' }}/>
+    </Row>
+  )
 }
 
 const page = { flex: 1, overflowY: 'auto', padding: 28 }
