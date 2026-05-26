@@ -7,11 +7,13 @@ import { supabaseLogin, supabaseRegister } from '../utils/supabaseBackend'
 export default function LoginPage() {
   const { setToken, setUser, updateSettings, theme, toggleTheme } = useStore()
   const [mode, setMode] = useState('login')
+  const [showAuth, setShowAuth] = useState(false)
   const [form, setForm] = useState({ username: '', email: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [demoNotice, setDemoNotice] = useState(false)
   const [registerCooldownUntil, setRegisterCooldownUntil] = useState(0)
+  const compact = typeof window !== 'undefined' && window.innerWidth < 980
 
   const submit = async () => {
     if (mode === 'register' && Date.now() < registerCooldownUntil) {
@@ -89,57 +91,96 @@ export default function LoginPage() {
 
   return (
     <div style={pageWrap}>
-      <button onClick={toggleTheme} style={themeButton}>
-        {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
-      </button>
-
-      <section style={heroPanel} className="fade-in">
-        <div style={brandRow}>
-          <div style={logoBox}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" width="24" height="24">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-            </svg>
-          </div>
+      <header style={welcomeTopbar}>
+        <button style={brandButton}>
+          <span style={logoBox}>M</span>
           <div>
             <div style={brandName}>MEZOMAI</div>
-            <div style={brandSub}>AI CHARACTER PLATFORM</div>
+            <div style={brandSub}>AI iOS Workspace</div>
           </div>
-        </div>
-
-        <div style={tabWrap}>
+        </button>
+        <div style={topActions}>
+          <button onClick={toggleTheme} style={themeButton}>
+            {theme === 'light' ? 'Dark' : 'Light'}
+          </button>
           {['login', 'register'].map((m) => (
-            <button key={m} onClick={() => setMode(m)} style={tabStyle(mode === m)}>
-              {m === 'login' ? 'Sign In' : 'Register'}
+            <button key={m} onClick={() => { setMode(m); setShowAuth(true) }} style={topAuthBtn(mode === m && showAuth)}>
+              {m === 'login' ? 'Login' : 'Sign Up'}
             </button>
           ))}
         </div>
+      </header>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {mode === 'register' && (
-            <input placeholder="Username" value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} style={inputStyle}/>
-          )}
-          <input placeholder={mode === 'login' ? 'Email or demo' : 'Email'} type={mode === 'login' ? 'text' : 'email'} value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} style={inputStyle}/>
-          <input
-            placeholder="Password"
-            type="password"
-            value={form.password}
-            onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-            onKeyDown={e => e.key === 'Enter' && submit()}
-            style={inputStyle}
-          />
-        </div>
+      <main style={welcomeGrid(compact)} className="fade-in">
+        <section style={welcomeHero(compact)}>
+          <div style={phoneMock(compact)}>
+            <div style={phoneIsland} />
+            <div style={phoneTime}>9:41</div>
+            <div style={phoneApps}>
+              {[
+                ['Chat', '#34d399', '#0f766e'],
+                ['Code', '#a78bfa', '#6d28d9'],
+                ['Meet', '#fb7185', '#be123c'],
+                ['Stats', '#fbbf24', '#d97706'],
+              ].map(([label, from, to]) => (
+                <div key={label} style={phoneApp}>
+                  <span style={{ ...phoneIcon, background: `linear-gradient(145deg, ${from}, ${to})` }} />
+                  <small>{label}</small>
+                </div>
+              ))}
+            </div>
+            <div style={phoneDock}>
+              <span style={dockDot} />
+              <span style={dockDot} />
+              <span style={dockDot} />
+            </div>
+          </div>
 
-        {error && <div style={{ marginTop: 12, fontSize: 12, color: 'var(--red)', fontFamily: 'var(--ff-mono)' }}>{error}</div>}
-        {demoNotice && <div style={noticeStyle}>Demo workspace opened. Demo ID: demo, password: demo.</div>}
+          <div style={heroCopy}>
+            <div style={eyebrow}>Welcome</div>
+            <h1 style={headline}>Your AI workspace, arranged like apps.</h1>
+            <p style={subcopy}>Open chat, code, meetings, analytics, and settings from a glass dock. MEZOMAI keeps the product feel simple, touch-friendly, and familiar.</p>
+            <div style={ctaRow}>
+              <button onClick={() => { setMode('login'); setShowAuth(true) }} className="gold-glow-btn" style={primaryCta}>Login</button>
+              <button onClick={() => { setMode('register'); setShowAuth(true) }} style={secondaryCta}>Create Account</button>
+            </div>
+          </div>
+        </section>
 
-        <button onClick={submit} disabled={loading} className="gold-glow-btn" style={submitBtn}>
-          {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
-        </button>
+        <section style={authPanel(showAuth, compact)}>
+          <div style={tabWrap}>
+            {['login', 'register'].map((m) => (
+              <button key={m} onClick={() => { setMode(m); setShowAuth(true) }} style={tabStyle(mode === m)}>
+                {m === 'login' ? 'Login' : 'Register'}
+              </button>
+            ))}
+          </div>
 
-        <p style={helpText}>
-          Supabase works on Vercel when `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set. Demo ID: `demo`, password: `demo`.
-        </p>
-      </section>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {mode === 'register' && (
+              <input placeholder="Username" value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} style={inputStyle}/>
+            )}
+            <input placeholder={mode === 'login' ? 'Email or demo' : 'Email'} type={mode === 'login' ? 'text' : 'email'} value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} style={inputStyle}/>
+            <input
+              placeholder="Password"
+              type="password"
+              value={form.password}
+              onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+              onKeyDown={e => e.key === 'Enter' && submit()}
+              style={inputStyle}
+            />
+          </div>
+
+          {error && <div style={{ marginTop: 12, fontSize: 12, color: 'var(--red)', fontFamily: 'var(--ff-mono)' }}>{error}</div>}
+          {demoNotice && <div style={noticeStyle}>Demo workspace opened. Demo ID: demo, password: demo.</div>}
+
+          <button onClick={submit} disabled={loading} className="gold-glow-btn" style={submitBtn}>
+            {loading ? 'Processing...' : mode === 'login' ? 'Login to Desktop' : 'Create Desktop'}
+          </button>
+
+          <p style={helpText}>Demo ID: `demo`, password: `demo`.</p>
+        </section>
+      </main>
     </div>
   )
 }
@@ -177,41 +218,109 @@ function userToSettings(user = {}) {
 const pageWrap = {
   flex: 1,
   minHeight: '100vh',
+  background: `
+    radial-gradient(circle at 18% 20%, color-mix(in srgb, var(--gold) 24%, transparent), transparent 30%),
+    radial-gradient(circle at 82% 12%, color-mix(in srgb, var(--cyan) 20%, transparent), transparent 28%),
+    linear-gradient(160deg, var(--bg), color-mix(in srgb, var(--bg) 82%, #dbeafe 18%))
+  `,
+  position: 'relative',
+  padding: 18,
+  overflowY: 'auto',
+}
+
+const welcomeTopbar = {
+  height: 58,
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'center',
-  background: 'var(--bg)',
+  justifyContent: 'space-between',
+  gap: 14,
+  padding: 8,
+  border: '1px solid color-mix(in srgb, var(--b1) 68%, transparent)',
+  borderRadius: 999,
+  background: 'color-mix(in srgb, var(--bg1) 74%, transparent)',
+  boxShadow: '0 18px 44px rgba(15, 23, 42, .13)',
+  backdropFilter: 'blur(24px) saturate(1.2)',
   position: 'relative',
-  padding: 24,
+  zIndex: 3,
 }
 
-const themeButton = {
-  position: 'absolute',
-  top: 20,
-  right: 20,
-  background: 'var(--bg1)',
-  border: '1px solid var(--b1)',
-  padding: '9px 12px',
-  color: 'var(--t2)',
-  fontSize: 12,
-}
+const brandButton = { border: 0, background: 'transparent', display: 'flex', alignItems: 'center', gap: 10, color: 'var(--t1)', padding: 2 }
+const topActions = { display: 'flex', alignItems: 'center', gap: 8 }
+const topAuthBtn = (active) => ({ border: 0, background: active ? 'var(--t1)' : 'color-mix(in srgb, var(--bg2) 84%, transparent)', color: active ? 'var(--bg1)' : 'var(--t2)', padding: '9px 14px', borderRadius: 999, fontWeight: 800, fontSize: 12 })
 
-const heroPanel = {
-  width: 'min(420px, 100%)',
-  background: 'var(--bg1)',
-  border: '1px solid var(--b1)',
-  borderRadius: 16,
-  padding: 34,
-  boxShadow: '0 24px 70px rgba(15,23,42,.14)',
-}
+const welcomeGrid = (compact) => ({
+  minHeight: 'calc(100vh - 94px)',
+  display: 'grid',
+  gridTemplateColumns: compact ? '1fr' : 'minmax(0, 1fr) minmax(340px, 430px)',
+  gap: 22,
+  alignItems: 'stretch',
+  paddingTop: 18,
+})
 
-const brandRow = { display: 'flex', alignItems: 'center', gap: 13, marginBottom: 30 }
-const logoBox = { width: 46, height: 46, background: 'linear-gradient(135deg, var(--gold), #0f766e)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 16px 30px var(--gold-glow)' }
-const brandName = { fontFamily: 'var(--ff-display)', fontSize: 25, fontWeight: 800, letterSpacing: '.04em' }
-const brandSub = { fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--t3)', letterSpacing: '.12em' }
-const tabWrap = { display: 'flex', gap: 4, marginBottom: 22, background: 'var(--bg3)', borderRadius: 10, padding: 4 }
-const tabStyle = (active) => ({ flex: 1, padding: '9px 0', border: 'none', background: active ? 'var(--bg1)' : 'transparent', color: active ? 'var(--t1)' : 'var(--t3)', fontFamily: 'var(--ff-display)', fontSize: 13, fontWeight: 700, boxShadow: active ? '0 4px 12px rgba(15,23,42,.08)' : 'none' })
-const inputStyle = { width: '100%', fontSize: 13 }
+const welcomeHero = (compact) => ({
+  minHeight: 0,
+  borderRadius: 34,
+  border: '1px solid color-mix(in srgb, var(--b1) 68%, transparent)',
+  background: 'color-mix(in srgb, var(--bg1) 54%, transparent)',
+  boxShadow: '0 28px 90px rgba(15, 23, 42, .18), inset 0 1px 0 rgba(255,255,255,.48)',
+  backdropFilter: 'blur(24px) saturate(1.2)',
+  padding: 'min(6vw, 54px)',
+  display: 'grid',
+  gridTemplateColumns: compact ? '1fr' : 'minmax(260px, 390px) minmax(0, 1fr)',
+  gap: 34,
+  alignItems: 'center',
+  overflow: 'hidden',
+})
+
+const phoneMock = (compact) => ({
+  width: compact ? 'min(230px, 100%)' : 'min(330px, 100%)',
+  aspectRatio: '9 / 16',
+  margin: '0 auto',
+  borderRadius: 44,
+  border: '10px solid #111827',
+  background: 'linear-gradient(160deg, #dbeafe, #f8fafc 38%, #bfdbfe)',
+  boxShadow: '0 34px 70px rgba(15, 23, 42, .34)',
+  position: 'relative',
+  padding: 28,
+  display: 'flex',
+  flexDirection: 'column',
+})
+const phoneIsland = { position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', width: 82, height: 24, borderRadius: 999, background: '#111827' }
+const phoneTime = { marginTop: 22, textAlign: 'center', fontSize: 34, fontWeight: 900, color: '#111827', fontFamily: 'var(--ff-display)' }
+const phoneApps = { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 18, marginTop: 34 }
+const phoneApp = { display: 'grid', justifyItems: 'center', gap: 8, color: '#1f2937', fontWeight: 800 }
+const phoneIcon = { width: 58, height: 58, borderRadius: 17, boxShadow: '0 12px 24px rgba(15, 23, 42, .18)' }
+const phoneDock = { marginTop: 'auto', height: 74, borderRadius: 26, background: 'rgba(255,255,255,.55)', backdropFilter: 'blur(18px)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }
+const dockDot = { width: 46, height: 46, borderRadius: 15, background: 'rgba(255,255,255,.72)', boxShadow: '0 8px 18px rgba(15,23,42,.12)' }
+
+const heroCopy = { maxWidth: 660 }
+const eyebrow = { fontFamily: 'var(--ff-mono)', color: 'var(--gold)', fontSize: 11, letterSpacing: '.16em', textTransform: 'uppercase', fontWeight: 900 }
+const headline = { fontFamily: 'var(--ff-display)', fontSize: 'clamp(38px, 6vw, 78px)', lineHeight: .96, letterSpacing: 0, marginTop: 12 }
+const subcopy = { color: 'var(--t2)', fontSize: 16, lineHeight: 1.7, marginTop: 20, maxWidth: 570 }
+const ctaRow = { display: 'flex', gap: 12, marginTop: 28, flexWrap: 'wrap' }
+const primaryCta = { border: 0, padding: '13px 20px', borderRadius: 999, fontWeight: 900 }
+const secondaryCta = { border: '1px solid var(--b1)', background: 'color-mix(in srgb, var(--bg1) 72%, transparent)', color: 'var(--t1)', padding: '13px 20px', borderRadius: 999, fontWeight: 900 }
+
+const authPanel = (show, compact) => ({
+  alignSelf: 'center',
+  width: compact ? 'min(430px, 100%)' : '100%',
+  justifySelf: compact ? 'center' : 'stretch',
+  background: 'color-mix(in srgb, var(--bg1) 76%, transparent)',
+  border: '1px solid color-mix(in srgb, var(--b1) 68%, transparent)',
+  borderRadius: 28,
+  padding: 26,
+  boxShadow: '0 24px 70px rgba(15,23,42,.16)',
+  backdropFilter: 'blur(24px) saturate(1.2)',
+  opacity: show ? 1 : .96,
+})
+
+const themeButton = { border: 0, background: 'color-mix(in srgb, var(--bg2) 84%, transparent)', padding: '9px 14px', color: 'var(--t2)', borderRadius: 999, fontSize: 12, fontWeight: 800 }
+const logoBox = { width: 40, height: 40, background: 'linear-gradient(135deg, var(--gold), #0f766e)', borderRadius: 14, display: 'grid', placeItems: 'center', color: '#fff', boxShadow: '0 16px 30px var(--gold-glow)', fontFamily: 'var(--ff-display)', fontWeight: 900 }
+const brandName = { fontFamily: 'var(--ff-display)', fontSize: 16, fontWeight: 900, letterSpacing: '.04em' }
+const brandSub = { fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--t3)', letterSpacing: '.08em' }
+const tabWrap = { display: 'flex', gap: 4, marginBottom: 22, background: 'color-mix(in srgb, var(--bg3) 76%, transparent)', borderRadius: 999, padding: 4 }
+const tabStyle = (active) => ({ flex: 1, padding: '10px 0', border: 'none', borderRadius: 999, background: active ? 'var(--bg1)' : 'transparent', color: active ? 'var(--t1)' : 'var(--t3)', fontFamily: 'var(--ff-display)', fontSize: 13, fontWeight: 800, boxShadow: active ? '0 4px 12px rgba(15,23,42,.08)' : 'none' })
+const inputStyle = { width: '100%', fontSize: 13, borderRadius: 14, padding: '12px 14px' }
 const noticeStyle = { marginTop: 12, fontSize: 11, color: 'var(--t2)', fontFamily: 'var(--ff-mono)' }
-const submitBtn = { width: '100%', marginTop: 20, padding: '13px 0', border: 'none', fontFamily: 'var(--ff-display)', fontSize: 14, fontWeight: 800, opacity: 1 }
+const submitBtn = { width: '100%', marginTop: 20, padding: '13px 0', border: 'none', borderRadius: 999, fontFamily: 'var(--ff-display)', fontSize: 14, fontWeight: 900, opacity: 1 }
 const helpText = { marginTop: 18, fontSize: 11, color: 'var(--t3)', textAlign: 'center', lineHeight: 1.6 }
