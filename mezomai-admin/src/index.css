@@ -255,6 +255,36 @@ body::before {
   font-size: 13px;
 }
 
+.link-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.status-link {
+  display: grid;
+  gap: 4px;
+  padding: 11px 12px;
+  border: 1px solid rgba(34, 211, 238, .22);
+  border-radius: 8px;
+  background: rgba(34, 211, 238, .07);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.status-link span {
+  color: var(--accent-cyan);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.status-link strong {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
 .env-preview {
   min-height: 360px;
   max-height: 520px;

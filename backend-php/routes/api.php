@@ -15,6 +15,15 @@ use App\Http\Controllers\MailController;
 |--------------------------------------------------------------------------
 */
 
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'online',
+        'service' => 'MEZOMAI PHP API',
+        'version' => '1.0.0',
+        'python_backend_url' => rtrim(env('PYTHON_BACKEND_URL', ''), '/'),
+    ]);
+});
+
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 

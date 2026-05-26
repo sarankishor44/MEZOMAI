@@ -18,6 +18,9 @@ export default function Settings() {
   const [config, setConfig] = useState(() => loadAdminConfig());
   const [status, setStatus] = useState('Ready');
   const envText = useMemo(() => exportEnv(config), [config]);
+  const phpHealthUrl = useMemo(() => buildUrl(config.phpApiUrl, '/health'), [config.phpApiUrl]);
+  const pythonStatusUrl = useMemo(() => buildUrl(config.pythonApiUrl, '/'), [config.pythonApiUrl]);
+  const pythonHealthUrl = useMemo(() => buildUrl(config.pythonApiUrl, '/health'), [config.pythonApiUrl]);
 
   const update = (key, value) => setConfig(current => ({ ...current, [key]: value }));
 
@@ -46,6 +49,11 @@ export default function Settings() {
         <div className="cyber-panel config-panel">
           <h2>API Routing</h2>
           <p className="muted-copy">Admin controls backend routes and platform deployment secrets. AI provider keys are managed by each user in the main app settings.</p>
+          <div className="link-grid">
+            <StatusLink label="PHP status" href={phpHealthUrl} />
+            <StatusLink label="Python status" href={pythonStatusUrl} />
+            <StatusLink label="Python health" href={pythonHealthUrl} />
+          </div>
           <div className="config-form">
             {fields.map(([key, label, placeholder, Icon]) => (
               <label key={key} className="config-field">
@@ -71,4 +79,19 @@ export default function Settings() {
       </section>
     </div>
   );
+}
+
+function StatusLink({ label, href }) {
+  return (
+    <a className="status-link" href={href} target="_blank" rel="noreferrer">
+      <span>{label}</span>
+      <strong>{href}</strong>
+    </a>
+  );
+}
+
+function buildUrl(base, path) {
+  const cleanBase = (base || '').trim().replace(/\/$/, '');
+  if (!cleanBase) return path;
+  return `${cleanBase}${path}`;
 }

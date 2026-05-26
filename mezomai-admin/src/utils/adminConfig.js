@@ -42,6 +42,7 @@ export function exportEnv(config) {
     '',
     '# Backend-only secrets stay on PHP/Python hosts, not in frontend Vercel.',
     'JWT_SECRET=replace-with-long-random-secret',
+    `PYTHON_BACKEND_URL=${next.pythonApiUrl}`,
     `RESEND_API_KEY=${next.resendApiKey || 'replace-with-resend-secret'}`,
     `RESEND_FROM="${next.resendFrom}"`,
     `MEETING_BOT_PROVIDER=${next.meetingBotProvider}`,
