@@ -176,6 +176,13 @@ export default function MeetingsPage() {
         meeting_url: meetingUrl,
         bot_name: settings.avatarName || 'MEZOMAI AI',
         entry_message: `${settings.avatarName || 'MEZOMAI AI'} joined to capture notes and action items.`,
+        avatar: {
+          name: settings.avatarName || 'ARIA',
+          gender: settings.avatarGender || 'female',
+          style: settings.avatarStyle || 'gold',
+          personality: settings.personality || 'friendly',
+          voice_name: settings.voiceName || '',
+        },
       })
 
       if (data.status === 'joining') {

@@ -2,77 +2,80 @@ import os
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, HttpUrl
 
 router = APIRouter()
+
+
+class AvatarProfile(BaseModel):
+    name: str = "ARIA"
+    gender: str = "female"
+    style: str = "gold"
+    personality: str = "friendly"
+    voice_name: Optional[str] = None
 
 
 class MeetingBotJoinRequest(BaseModel):
     meeting_url: HttpUrl
     bot_name: str = "MEZOMAI AI"
     entry_message: Optional[str] = None
+    avatar: Optional[AvatarProfile] = None
 
 
 @router.post("/join")
 async def join_meeting_bot(req: MeetingBotJoinRequest):
-    provider = os.getenv("MEETING_BOT_PROVIDER", "meetingbaas").lower()
+    bot_api_url = os.getenv("MEETING_BOT_API_URL", "").strip().rstrip("/")
+    bot_api_key = os.getenv("MEETING_BOT_API_KEY", "").strip()
 
-    if provider != "meetingbaas":
+    if not bot_api_url:
         return {
             "configured": False,
-            "provider": provider,
-            "status": "unsupported_provider",
-            "message": "Set MEETING_BOT_PROVIDER=meetingbaas or add a provider adapter.",
+            "provider": "mezomai-selfhosted",
+            "status": "missing_bot_api_url",
+            "message": "MEETING_BOT_API_URL is not configured. Deploy meeting-bot-service and add its API URL.",
         }
 
-    api_key = os.getenv("MEETINGBAAS_API_KEY")
-    if not api_key:
-        return {
-            "configured": False,
-            "provider": "meetingbaas",
-            "status": "missing_api_key",
-            "message": "MEETINGBAAS_API_KEY is not configured, so MEZOMAI can only run as an in-app companion.",
-        }
+    headers = {"Content-Type": "application/json"}
+    if bot_api_key:
+        headers["Authorization"] = f"Bearer {bot_api_key}"
 
     payload = {
         "meeting_url": str(req.meeting_url),
         "bot_name": req.bot_name,
-        "recording_mode": "speaker_view",
-        "entry_message": req.entry_message or "MEZOMAI AI has joined to help capture notes and action items.",
-        "reserved": False,
-        "speech_to_text": {
-            "provider": "Default",
-        },
-        "automatic_leave": {
-            "waiting_room_timeout": 600,
-        },
+        "entry_message": req.entry_message or "MEZOMAI AI joined to capture notes and action items.",
+        "avatar": (req.avatar or AvatarProfile(name=req.bot_name)).model_dump(),
     }
 
-    async with httpx.AsyncClient(timeout=20) as client:
-        response = await client.post(
-            "https://api.meetingbaas.com/bots",
-            headers={
-                "Content-Type": "application/json",
-                "x-meeting-baas-api-key": api_key,
-            },
-            json=payload,
-        )
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(f"{bot_api_url}/bots/join", headers=headers, json=payload)
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=502, detail=f"Meeting bot service request failed: {exc}") from exc
 
     if response.status_code >= 400:
         return {
             "configured": True,
-            "provider": "meetingbaas",
+            "provider": "mezomai-selfhosted",
             "status": "failed",
-            "message": "Meeting bot provider rejected the join request.",
+            "message": "Meeting bot service rejected the join request.",
             "details": response.text,
         }
 
     data = response.json()
     return {
         "configured": True,
-        "provider": "meetingbaas",
-        "status": "joining",
-        "bot_id": data.get("bot_id") or data.get("id"),
+        "provider": "mezomai-selfhosted",
+        "status": data.get("status", "joining"),
+        "bot_id": data.get("bot_id"),
         "data": data,
+    }
+
+
+@router.get("/providers")
+async def meeting_bot_providers():
+    return {
+        "active_provider": "mezomai-selfhosted",
+        "bot_api_configured": bool(os.getenv("MEETING_BOT_API_URL")),
+        "auth_enabled": bool(os.getenv("MEETING_BOT_API_KEY")),
     }

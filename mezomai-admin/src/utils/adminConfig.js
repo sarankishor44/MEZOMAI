@@ -8,8 +8,8 @@ export const defaultAdminConfig = {
   sentryDsn: '',
   resendApiKey: '',
   resendFrom: 'MEZOMAI <no-reply@yourdomain.com>',
-  meetingBotProvider: 'meetingbaas',
-  meetingBaasKey: '',
+  meetingBotApiUrl: 'https://your-meeting-bot-service.com',
+  meetingBotApiKey: '',
 };
 
 export function loadAdminConfig() {
@@ -45,7 +45,7 @@ export function exportEnv(config) {
     `PYTHON_BACKEND_URL=${next.pythonApiUrl}`,
     `RESEND_API_KEY=${next.resendApiKey || 'replace-with-resend-secret'}`,
     `RESEND_FROM="${next.resendFrom}"`,
-    `MEETING_BOT_PROVIDER=${next.meetingBotProvider}`,
-    `MEETINGBAAS_API_KEY=${next.meetingBaasKey || 'replace-with-meetingbaas-secret'}`,
+    `MEETING_BOT_API_URL=${next.meetingBotApiUrl}`,
+    `MEETING_BOT_API_KEY=${next.meetingBotApiKey || 'replace-with-meeting-bot-secret'}`,
   ].join('\n');
 }

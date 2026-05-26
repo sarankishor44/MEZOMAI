@@ -33,9 +33,11 @@ VITE_PYTHON_API=https://your-python-api.example.com
 Optional, on the deployed Python/FastAPI backend, if you want MEZOMAI to join a pasted Google Meet/Zoom/Teams URL as a real bot participant:
 
 ```env
-MEETING_BOT_PROVIDER=meetingbaas
-MEETINGBAAS_API_KEY=your-meetingbaas-api-key
+MEETING_BOT_API_URL=https://your-meeting-bot-service.com
+MEETING_BOT_API_KEY=your-meeting-bot-secret
 ```
+
+Deploy `meeting-bot-service/` separately on a long-running Docker host. Vercel serverless is not a good fit for a browser bot.
 
 ## 3. What runs where
 

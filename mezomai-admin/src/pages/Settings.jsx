@@ -10,8 +10,8 @@ const fields = [
   ['sentryDsn', 'Sentry DSN', 'https://...@...ingest.sentry.io/...', ShieldCheck],
   ['resendApiKey', 'Resend API key', 're_...', KeyRound],
   ['resendFrom', 'Resend From', 'MEZOMAI <no-reply@yourdomain.com>', KeyRound],
-  ['meetingBotProvider', 'Meeting Bot Provider', 'meetingbaas', Server],
-  ['meetingBaasKey', 'MeetingBaas API key', 'mb_live_...', KeyRound],
+  ['meetingBotApiUrl', 'Meeting Bot API URL', 'https://your-meeting-bot-service.com', Server],
+  ['meetingBotApiKey', 'Meeting Bot API key', 'bot secret...', KeyRound],
 ];
 
 export default function Settings() {

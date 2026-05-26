@@ -53,6 +53,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      meeting-bot:
+        condition: service_started
     networks:
       - aria_net
 
@@ -78,8 +80,8 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
       - APP_ENV=${APP_ENV:-production}
-      - MEETING_BOT_PROVIDER=${MEETING_BOT_PROVIDER:-meetingbaas}
-      - MEETINGBAAS_API_KEY=${MEETINGBAAS_API_KEY:-}
+      - MEETING_BOT_API_URL=${MEETING_BOT_API_URL:-http://meeting-bot:8010}
+      - MEETING_BOT_API_KEY=${MEETING_BOT_API_KEY:-}
     depends_on:
       mysql:
         condition: service_healthy
@@ -89,6 +91,22 @@ services:
       - aria_net
 
   # ── MYSQL DATABASE ──────────────────────────────
+  meeting-bot:
+    build:
+      context: ./meeting-bot-service
+      dockerfile: Dockerfile
+    container_name: aria_meeting_bot
+    ports:
+      - "8010:8010"
+    environment:
+      - PORT=8010
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      - MEETING_BOT_API_KEY=${MEETING_BOT_API_KEY:-}
+      - BOT_HEADLESS=${BOT_HEADLESS:-true}
+      - BOT_MAX_SESSION_SECONDS=${BOT_MAX_SESSION_SECONDS:-5400}
+    networks:
+      - aria_net
+
   mysql:
     image: mysql:8.0
     container_name: aria_mysql

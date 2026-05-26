@@ -78,15 +78,17 @@ Set these on the Python API deployment:
 APP_ENV=production
 ALLOWED_ORIGINS=https://mezomai.vercel.app
 
-MEETING_BOT_PROVIDER=meetingbaas
-MEETINGBAAS_API_KEY=replace-with-meetingbaas-key
+MEETING_BOT_API_URL=https://your-meeting-bot-service.com
+MEETING_BOT_API_KEY=replace-with-meeting-bot-secret
 ```
+
+Deploy `meeting-bot-service/` separately on a long-running Docker host. The main React app does not call this service directly; it calls the Python API, and the Python API forwards the request to your bot service with `MEETING_BOT_API_KEY`.
 
 For Vercel Python serverless, REST endpoints can work. Long-running WebSockets and sandbox code execution are better on Render, Railway, Fly.io, or a VPS.
 
 ## Data leak prevention checklist
 
-- Keep `RESEND_API_KEY`, `MEETINGBAAS_API_KEY`, DB passwords, JWT secrets, and service-role keys only on backend hosts.
+- Keep `RESEND_API_KEY`, `MEETING_BOT_API_KEY`, DB passwords, JWT secrets, and service-role keys only on backend hosts.
 - Keep only publishable keys in Vercel React variables.
 - Set CORS to your frontend domain, not `*`.
 - Use HTTPS URLs for PHP and Python APIs in production.
