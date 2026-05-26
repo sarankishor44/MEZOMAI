@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
-import { getBackendUrls, phpApi, setBackendUrls } from '../utils/api'
+import { phpApi } from '../utils/api'
 import { isSupabaseConfigured } from '../utils/supabase'
 import { loadSupabaseSettings, saveSupabaseSettings, signOutSupabase } from '../utils/supabaseBackend'
 
@@ -12,13 +12,12 @@ const PRESETS = [
   ['Professional', 'professional', (name) => `You are ${name}, a formal business assistant. Be concise, precise, and operational.`],
 ]
 
+const AI_KEY_PROVIDERS = new Set(['anthropic', 'openai', 'gemini'])
+
 export default function SettingsPage() {
   const { settings, updateSettings, logout } = useStore()
   const [saving, setSaving] = useState(false)
   const [dbStatus, setDbStatus] = useState('Local settings')
-  const [backendUrls, setBackendUrlState] = useState(() => getBackendUrls())
-  const pythonUrlPreview = backendUrls.pythonUrl.replace(/\/$/, '').replace(/\/ai$/, '')
-  const pythonRestPreview = pythonUrlPreview.endsWith('/ai') ? pythonUrlPreview : `${pythonUrlPreview}/ai`
   const voices = typeof speechSynthesis !== 'undefined' ? speechSynthesis.getVoices() : []
 
   React.useEffect(() => {
@@ -61,8 +60,6 @@ export default function SettingsPage() {
         apiKey: settings.apiKey,
         openAiKey: settings.openAiKey,
         geminiKey: settings.geminiKey,
-        elevenLabsKey: settings.elevenLabsKey,
-        dailyKey: settings.dailyKey,
       })
       setDbStatus('Saved to DB')
     } catch (e) {
@@ -80,21 +77,6 @@ export default function SettingsPage() {
     } finally {
       setSaving(false)
     }
-  }
-
-  const saveBackendUrls = () => {
-    setBackendUrls({
-      phpUrl: backendUrls.phpUrl,
-      pythonUrl: backendUrls.pythonUrl,
-    })
-    setBackendUrlState(getBackendUrls())
-    setDbStatus('Backend API URLs saved')
-  }
-
-  const resetBackendUrls = () => {
-    setBackendUrls({ phpUrl: '', pythonUrl: '' })
-    setBackendUrlState(getBackendUrls())
-    setDbStatus('Backend API URLs reset')
   }
 
   const testVoice = () => {
@@ -187,42 +169,15 @@ export default function SettingsPage() {
         </section>
 
         <section style={panel}>
-          <SectionTitle title="AI API Keys" sub="Save your own provider keys for chat, summaries, voice, and meeting integrations."/>
-          <SecretRow label="Anthropic" value={settings.apiKey || ''} onChange={value => updateSettings({ apiKey: value })} placeholder="sk-ant-api03-..." />
-          <SecretRow label="OpenAI" value={settings.openAiKey || ''} onChange={value => updateSettings({ openAiKey: value })} placeholder="sk-..." />
+          <SectionTitle title="AI API Keys" sub="Save your own Claude, ChatGPT/OpenAI, and Gemini keys."/>
+          <SecretRow label="Claude" value={settings.apiKey || ''} onChange={value => updateSettings({ apiKey: value })} placeholder="sk-ant-api03-..." />
+          <SecretRow label="ChatGPT / OpenAI" value={settings.openAiKey || ''} onChange={value => updateSettings({ openAiKey: value })} placeholder="sk-..." />
           <SecretRow label="Gemini" value={settings.geminiKey || ''} onChange={value => updateSettings({ geminiKey: value })} placeholder="AIza..." />
-          <SecretRow label="ElevenLabs" value={settings.elevenLabsKey || ''} onChange={value => updateSettings({ elevenLabsKey: value })} placeholder="voice key..." />
-          <SecretRow label="Daily" value={settings.dailyKey || ''} onChange={value => updateSettings({ dailyKey: value })} placeholder="daily API key..." />
-          {Array.isArray(settings.keyHints) && settings.keyHints.length > 0 && (
+          {getAiKeyHints(settings.keyHints).length > 0 && (
             <div style={hintBox}>
-              Saved keys: {settings.keyHints.map(key => `${key.provider} ${key.key_hint || ''}`).join(', ')}
+              Saved keys: {getAiKeyHints(settings.keyHints).map(key => `${key.provider} ${key.key_hint || ''}`).join(', ')}
             </div>
           )}
-        </section>
-
-        <section style={panel}>
-          <SectionTitle title="Backend API URLs" sub="Connect this frontend to deployed PHP and Python backends."/>
-          <Row label="PHP API">
-            <input
-              value={backendUrls.phpUrl}
-              onChange={e => setBackendUrlState(current => ({ ...current, phpUrl: e.target.value }))}
-              placeholder="https://your-php-host.com/api"
-              style={{ ...input, width: '100%' }}
-            />
-          </Row>
-          <Row label="Python API">
-            <input
-              value={backendUrls.pythonUrl}
-              onChange={e => setBackendUrlState(current => ({ ...current, pythonUrl: e.target.value }))}
-              placeholder="https://your-python-host.com"
-              style={{ ...input, width: '100%' }}
-            />
-          </Row>
-          <div style={hintBox}>Python REST calls resolve to {pythonRestPreview}</div>
-          <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-            <button onClick={saveBackendUrls} className="gold-glow-btn" style={{ ...primaryBtn, marginTop: 0 }}>Save URLs</button>
-            <button onClick={resetBackendUrls} style={smallBtn}>Reset</button>
-          </div>
         </section>
 
         <section style={panel}>
@@ -268,6 +223,11 @@ function SecretRow({ label, value, onChange, placeholder }) {
       <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} type="password" autoComplete="off" style={{ ...input, width: '100%' }}/>
     </Row>
   )
+}
+
+function getAiKeyHints(keyHints) {
+  if (!Array.isArray(keyHints)) return []
+  return keyHints.filter(key => AI_KEY_PROVIDERS.has(key.provider))
 }
 
 const page = { flex: 1, overflowY: 'auto', padding: 28 }
