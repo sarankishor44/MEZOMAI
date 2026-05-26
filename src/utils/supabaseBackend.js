@@ -4,6 +4,11 @@ const SECRET_FIELDS = [
   ['apiKey', 'anthropic'],
   ['openAiKey', 'openai'],
   ['geminiKey', 'gemini'],
+  ['openRouterKey', 'openrouter'],
+  ['deepSeekKey', 'deepseek'],
+  ['groqKey', 'groq'],
+  ['mistralKey', 'mistral'],
+  ['xAiKey', 'xai'],
   ['elevenLabsKey', 'elevenlabs'],
   ['dailyKey', 'daily'],
 ]

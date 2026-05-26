@@ -227,6 +227,11 @@ export default function MeetingsPage() {
         api_key: settings.apiKey || undefined,
         openai_key: settings.openAiKey || undefined,
         gemini_key: settings.geminiKey || undefined,
+        openrouter_key: settings.openRouterKey || undefined,
+        deepseek_key: settings.deepSeekKey || undefined,
+        groq_key: settings.groqKey || undefined,
+        mistral_key: settings.mistralKey || undefined,
+        xai_key: settings.xAiKey || undefined,
       })
       setMeetingNotes({
         summary: data.summary,

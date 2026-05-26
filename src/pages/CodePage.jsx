@@ -17,6 +17,69 @@ const AGENT_STEPS = [
   'Run validation and summarize changes',
 ]
 
+const WORKSPACE_META_KEY = 'mezomai_code_workspace_meta'
+const SKIPPED_LOCAL_DIRS = new Set(['.git', 'node_modules', 'dist', 'build', '.next', 'vendor', '__pycache__'])
+const TEXT_EXTENSIONS = new Set([
+  'js', 'jsx', 'ts', 'tsx', 'py', 'php', 'css', 'scss', 'html', 'json', 'md', 'txt', 'env',
+  'yml', 'yaml', 'xml', 'sql', 'sh', 'ps1', 'vue', 'svelte', 'java', 'go', 'rs', 'rb', 'c', 'cpp', 'h',
+])
+
+const inferLanguage = (filename = '') => {
+  const ext = filename.split('.').pop()?.toLowerCase()
+  if (['js', 'jsx', 'ts', 'tsx'].includes(ext)) return 'javascript'
+  if (ext === 'py') return 'python'
+  if (ext === 'php') return 'php'
+  if (ext === 'css') return 'css'
+  if (ext === 'html') return 'html'
+  if (ext === 'json') return 'json'
+  if (['md', 'txt'].includes(ext)) return 'markdown'
+  return ext || 'text'
+}
+
+const isTextFile = (filename = '') => {
+  const parts = filename.split('.')
+  if (parts.length === 1) return true
+  return TEXT_EXTENSIONS.has(parts.pop().toLowerCase())
+}
+
+async function collectLocalFiles(directoryHandle, rootName, prefix = '', bucket = { count: 0, max: 160 }) {
+  const results = []
+  for await (const [name, handle] of directoryHandle.entries()) {
+    if (bucket.count >= bucket.max) break
+    if (handle.kind === 'directory') {
+      if (SKIPPED_LOCAL_DIRS.has(name)) continue
+      results.push(...await collectLocalFiles(handle, rootName, prefix ? `${prefix}/${name}` : name, bucket))
+      continue
+    }
+    if (!isTextFile(name)) continue
+    const file = await handle.getFile()
+    if (file.size > 512 * 1024) continue
+    const content = await file.text()
+    const path = prefix ? `${prefix}/${name}` : name
+    bucket.count += 1
+    results.push(normalizeFile({
+      id: `localfs:${path}`,
+      uuid: null,
+      filename: name,
+      name,
+      folder_path: prefix || rootName,
+      path: `${rootName}/${path}`,
+      language: inferLanguage(name),
+      content,
+      local: true,
+      handle,
+    }))
+  }
+  return results
+}
+
+async function writeLocalFile(file, content) {
+  if (!file?.handle?.createWritable) throw new Error('Local file handle is not writable.')
+  const writable = await file.handle.createWritable()
+  await writable.write(content)
+  await writable.close()
+}
+
 const normalizeFile = (file) => ({
   ...file,
   id: file.uuid || file.id,
@@ -24,7 +87,7 @@ const normalizeFile = (file) => ({
   filename: file.filename || file.name,
   lang: file.language || file.lang || 'python',
   language: file.language || file.lang || 'python',
-  path: `${file.folder_path || 'workspace'}/${file.filename || file.name}`.replace('//', '/'),
+  path: file.path || `${file.folder_path || 'workspace'}/${file.filename || file.name}`.replace('//', '/'),
 })
 
 export default function CodePage() {
@@ -39,6 +102,14 @@ export default function CodePage() {
   const [activity, setActivity] = useState('explorer')
   const [bottomPanel, setBottomPanel] = useState('terminal')
   const [syncState, setSyncState] = useState('Local fallback')
+  const [directoryHandle, setDirectoryHandle] = useState(null)
+  const [workspaceRoot, setWorkspaceRoot] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(WORKSPACE_META_KEY) || '{}').rootName || 'MEZOMAI-WORKSPACE'
+    } catch {
+      return 'MEZOMAI-WORKSPACE'
+    }
+  })
 
   const activeFile = files.find(f => f.id === activeFileId) || files[0]
 
@@ -99,6 +170,15 @@ export default function CodePage() {
   const persistFile = async (file, patch = {}) => {
     const next = { ...file, ...patch }
     setFiles(current => current.map(f => f.id === file.id ? normalizeFile(next) : f))
+    if (file.local) {
+      try {
+        await writeLocalFile(file, next.content || '')
+        setSyncState('Saved to local folder')
+      } catch (error) {
+        setSyncState(error.message || 'Local file save failed')
+      }
+      return
+    }
     if (!file.uuid) return
     try {
       const { data } = await phpApi.put(`/code/files/${file.uuid}`, {
@@ -126,6 +206,30 @@ export default function CodePage() {
 
   const createFile = async () => {
     const filename = `untitled-${files.length + 1}.py`
+    if (directoryHandle) {
+      try {
+        const handle = await directoryHandle.getFileHandle(filename, { create: true })
+        const localFile = normalizeFile({
+          id: `localfs:${filename}`,
+          uuid: null,
+          filename,
+          language: 'python',
+          content: 'print("Hello from MEZOMAI")\n',
+          folder_path: workspaceRoot,
+          path: `${workspaceRoot}/${filename}`,
+          local: true,
+          handle,
+        })
+        await writeLocalFile(localFile, localFile.content)
+        setFiles(current => [localFile, ...current])
+        setActiveFileId(localFile.id)
+        setOpenTabs(current => [localFile.id, ...current])
+        setSyncState('Created in local folder')
+        return
+      } catch (error) {
+        setSyncState(error.message || 'Local create failed')
+      }
+    }
     const localFile = normalizeFile({ id: `local-${Date.now()}`, filename, language: 'python', content: 'print("Hello from MEZOMAI")\n', folder_path: 'workspace' })
     setFiles(current => [localFile, ...current])
     setActiveFileId(localFile.id)
@@ -165,6 +269,33 @@ export default function CodePage() {
   const openFile = (fileId) => {
     setActiveFileId(fileId)
     if (!openTabs.includes(fileId)) setOpenTabs([...openTabs, fileId])
+  }
+
+  const openLocalFolder = async () => {
+    if (!('showDirectoryPicker' in window)) {
+      setSyncState('Local folders need Chrome or Edge desktop')
+      return
+    }
+    try {
+      const handle = await window.showDirectoryPicker({ mode: 'readwrite' })
+      const localFiles = await collectLocalFiles(handle, handle.name)
+      setDirectoryHandle(handle)
+      setWorkspaceRoot(handle.name)
+      if (localFiles.length) {
+        setFiles(localFiles)
+        setActiveFileId(localFiles[0].id)
+        setOpenTabs([localFiles[0].id])
+      }
+      localStorage.setItem(WORKSPACE_META_KEY, JSON.stringify({
+        rootName: handle.name,
+        files: localFiles.map(({ handle: _handle, content: _content, ...file }) => file),
+        updatedAt: new Date().toISOString(),
+      }))
+      setTerminalLogs(prev => [...prev, { type: 'success', text: `Opened local folder ${handle.name}. Loaded ${localFiles.length} text files.` }])
+      setSyncState(localFiles.length ? 'Local folder mounted' : 'Local folder empty')
+    } catch (error) {
+      if (error?.name !== 'AbortError') setSyncState(error.message || 'Folder access cancelled')
+    }
   }
 
   const runCode = async () => {
@@ -216,9 +347,9 @@ export default function CodePage() {
   return (
     <div style={workspace} className="fade-in">
       <ActivityRail activity={activity} setActivity={setActivity}/>
-      <SidePanel activity={activity} files={files} activeFileId={activeFileId} openFile={openFile} createFile={createFile} syncState={syncState}/>
+      <SidePanel activity={activity} files={files} activeFileId={activeFileId} openFile={openFile} createFile={createFile} openLocalFolder={openLocalFolder} syncState={syncState} workspaceRoot={workspaceRoot}/>
       <main style={mainArea}>
-        <TopBar activeFile={activeFile} runCode={runCode} openDiff={() => setIsDiffMode(true)} syncState={syncState}/>
+        <TopBar activeFile={activeFile} runCode={runCode} openDiff={() => setIsDiffMode(true)} syncState={syncState} workspaceRoot={workspaceRoot}/>
         <TabBar files={files} openTabs={openTabs} setOpenTabs={setOpenTabs} activeFileId={activeFileId} setActiveFileId={setActiveFileId}/>
         <Editor activeFile={activeFile} isDiffMode={isDiffMode} setIsDiffMode={setIsDiffMode} updateFileContent={updateFileContent}/>
         <BottomPanel panel={bottomPanel} setPanel={setBottomPanel} logs={terminalLogs} setLogs={setTerminalLogs}/>
@@ -234,32 +365,35 @@ function ActivityRail({ activity, setActivity }) {
   return <aside style={activityRail}>{items.map(([id, label]) => <button key={id} onClick={() => setActivity(id)} title={id} style={railBtn(activity === id)}>{label}</button>)}</aside>
 }
 
-function SidePanel({ activity, files, activeFileId, openFile, createFile, syncState }) {
+function SidePanel({ activity, files, activeFileId, openFile, createFile, openLocalFolder, syncState, workspaceRoot }) {
   return (
     <aside style={sidePanel}>
       <div style={panelTitle}>{activity === 'explorer' ? 'Explorer' : activity === 'search' ? 'Search' : activity === 'source' ? 'Source Control' : 'Agent Context'}</div>
       {activity === 'explorer' && (
         <>
-          <button onClick={createFile} style={smallBtn}>New File</button>
-          <div style={folderName}>MEZOMAI-WORKSPACE</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <button onClick={openLocalFolder} style={smallBtn}>Open Folder</button>
+            <button onClick={createFile} style={smallBtn}>New File</button>
+          </div>
+          <div style={folderName}>{workspaceRoot}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             {files.map(file => <button key={file.id} onClick={() => openFile(file.id)} style={fileRow(activeFileId === file.id)}><span style={fileBadge}>{file.language.slice(0, 2).toUpperCase()}</span><span>{file.name}</span></button>)}
           </div>
           <div style={mutedBox}>{syncState}</div>
         </>
       )}
-      {activity === 'search' && <div style={mutedBox}>Search UI is ready. File contents are loaded from PHP.</div>}
-      {activity === 'source' && <div style={mutedBox}>Changes save through PHP file versions.</div>}
+      {activity === 'search' && <div style={mutedBox}>Search UI is ready. Mounted folders read directly from the selected local directory.</div>}
+      {activity === 'source' && <div style={mutedBox}>Local workspaces save to disk. Remote files still save through PHP file versions.</div>}
       {activity === 'agent' && <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>{AGENT_STEPS.map((step, index) => <div key={step} style={stepRow}><span>{index + 1}</span>{step}</div>)}</div>}
     </aside>
   )
 }
 
-function TopBar({ activeFile, runCode, openDiff, syncState }) {
+function TopBar({ activeFile, runCode, openDiff, syncState, workspaceRoot }) {
   return (
     <div style={topBar}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-        <span style={crumb}>workspace</span><span style={crumbSep}>/</span><span style={crumb}>{activeFile.name}</span><span style={crumbSep}>{syncState}</span>
+        <span style={crumb}>{workspaceRoot}</span><span style={crumbSep}>/</span><span style={crumb}>{activeFile.name}</span><span style={crumbSep}>{syncState}</span>
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={openDiff} style={toolbarBtn}>Diff Preview</button>

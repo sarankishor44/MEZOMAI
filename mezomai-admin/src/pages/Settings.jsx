@@ -10,6 +10,14 @@ const fields = [
   ['sentryDsn', 'Sentry DSN', 'https://...@...ingest.sentry.io/...', ShieldCheck],
   ['resendApiKey', 'Resend API key', 're_...', KeyRound],
   ['resendFrom', 'Resend From', 'MEZOMAI <no-reply@yourdomain.com>', KeyRound],
+  ['anthropicApiKey', 'Backend Anthropic key', 'sk-ant-api03-...', KeyRound],
+  ['openAiApiKey', 'Backend OpenAI key', 'sk-...', KeyRound],
+  ['geminiApiKey', 'Backend Gemini key', 'AIza...', KeyRound],
+  ['openRouterApiKey', 'Backend OpenRouter key', 'sk-or-...', KeyRound],
+  ['deepSeekApiKey', 'Backend DeepSeek key', 'sk-...', KeyRound],
+  ['groqApiKey', 'Backend Groq key', 'gsk_...', KeyRound],
+  ['mistralApiKey', 'Backend Mistral key', '...', KeyRound],
+  ['xAiApiKey', 'Backend xAI key', 'xai-...', KeyRound],
   ['meetingBotApiUrl', 'Meeting Bot API URL', 'https://your-meeting-bot-service.com', Server],
   ['meetingBotApiKey', 'Meeting Bot API key', 'bot secret...', KeyRound],
 ];
@@ -48,7 +56,7 @@ export default function Settings() {
       <section className="admin-grid">
         <div className="cyber-panel config-panel">
           <h2>API Routing</h2>
-          <p className="muted-copy">Admin controls backend routes and platform deployment secrets. AI provider keys are managed by each user in the main app settings.</p>
+          <p className="muted-copy">Admin controls backend routes and backend fallback provider keys. Users can still add their own keys in the main app settings.</p>
           <div className="link-grid">
             <StatusLink label="PHP status" href={phpHealthUrl} />
             <StatusLink label="Python status" href={pythonStatusUrl} />

@@ -12,7 +12,7 @@ const PRESETS = [
   ['Professional', 'professional', (name) => `You are ${name}, a formal business assistant. Be concise, precise, and operational.`],
 ]
 
-const AI_KEY_PROVIDERS = new Set(['anthropic', 'openai', 'gemini'])
+const AI_KEY_PROVIDERS = new Set(['anthropic', 'openai', 'gemini', 'openrouter', 'deepseek', 'groq', 'mistral', 'xai'])
 
 export default function SettingsPage() {
   const { settings, updateSettings, logout } = useStore()
@@ -60,6 +60,11 @@ export default function SettingsPage() {
         apiKey: settings.apiKey,
         openAiKey: settings.openAiKey,
         geminiKey: settings.geminiKey,
+        openRouterKey: settings.openRouterKey,
+        deepSeekKey: settings.deepSeekKey,
+        groqKey: settings.groqKey,
+        mistralKey: settings.mistralKey,
+        xAiKey: settings.xAiKey,
       })
       setDbStatus('Saved to DB')
     } catch (e) {
@@ -141,6 +146,11 @@ export default function SettingsPage() {
               <option value="anthropic">Anthropic</option>
               <option value="openai">OpenAI</option>
               <option value="gemini">Gemini</option>
+              <option value="openrouter">OpenRouter</option>
+              <option value="deepseek">DeepSeek</option>
+              <option value="groq">Groq</option>
+              <option value="mistral">Mistral</option>
+              <option value="xai">xAI</option>
             </select>
           </Row>
           <Row label="Model">
@@ -151,6 +161,12 @@ export default function SettingsPage() {
               <option value="gpt-4o-mini">GPT-4o Mini</option>
               <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
               <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+              <option value="openai/gpt-4o-mini">OpenRouter GPT-4o Mini</option>
+              <option value="anthropic/claude-3.5-sonnet">OpenRouter Claude 3.5 Sonnet</option>
+              <option value="deepseek-chat">DeepSeek Chat</option>
+              <option value="llama-3.1-8b-instant">Groq Llama 3.1 8B</option>
+              <option value="mistral-small-latest">Mistral Small</option>
+              <option value="grok-2-latest">xAI Grok 2</option>
             </select>
           </Row>
           <Row label="Voice">
@@ -169,10 +185,15 @@ export default function SettingsPage() {
         </section>
 
         <section style={panel}>
-          <SectionTitle title="AI API Keys" sub="Save your own Claude, ChatGPT/OpenAI, and Gemini keys."/>
+          <SectionTitle title="AI API Keys" sub="Save your own model keys. Leave blank to use backend env keys when configured."/>
           <SecretRow label="Claude" value={settings.apiKey || ''} onChange={value => updateSettings({ apiKey: value })} placeholder="sk-ant-api03-..." />
           <SecretRow label="ChatGPT / OpenAI" value={settings.openAiKey || ''} onChange={value => updateSettings({ openAiKey: value })} placeholder="sk-..." />
           <SecretRow label="Gemini" value={settings.geminiKey || ''} onChange={value => updateSettings({ geminiKey: value })} placeholder="AIza..." />
+          <SecretRow label="OpenRouter" value={settings.openRouterKey || ''} onChange={value => updateSettings({ openRouterKey: value })} placeholder="sk-or-..." />
+          <SecretRow label="DeepSeek" value={settings.deepSeekKey || ''} onChange={value => updateSettings({ deepSeekKey: value })} placeholder="sk-..." />
+          <SecretRow label="Groq" value={settings.groqKey || ''} onChange={value => updateSettings({ groqKey: value })} placeholder="gsk_..." />
+          <SecretRow label="Mistral" value={settings.mistralKey || ''} onChange={value => updateSettings({ mistralKey: value })} placeholder="..." />
+          <SecretRow label="xAI" value={settings.xAiKey || ''} onChange={value => updateSettings({ xAiKey: value })} placeholder="xai-..." />
           {getAiKeyHints(settings.keyHints).length > 0 && (
             <div style={hintBox}>
               Saved keys: {getAiKeyHints(settings.keyHints).map(key => `${key.provider} ${key.key_hint || ''}`).join(', ')}

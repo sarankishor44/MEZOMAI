@@ -149,21 +149,27 @@ export default function ChatPage() {
 
   const generateReply = async (history, userText) => {
     const systemPrompt = settings.systemPrompt || `You are ${settings.avatarName}, a ${selectedMode.toLowerCase()} AI assistant.`
-    if (settings.apiKey || settings.openAiKey || settings.geminiKey) {
-      try {
-        const { data } = await pyApi.post('/completion', {
-          system_prompt: systemPrompt,
-          prompt: memoryOn
-            ? history.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n')
-            : userText,
-          model: settings.model,
-          provider: settings.activeProvider || 'anthropic',
-          api_key: settings.apiKey || undefined,
-          openai_key: settings.openAiKey || undefined,
-          gemini_key: settings.geminiKey || undefined,
-        })
-        return data.response
-      } catch {}
+    try {
+      const { data } = await pyApi.post('/completion', {
+        system_prompt: systemPrompt,
+        prompt: memoryOn
+          ? history.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n')
+          : userText,
+        model: settings.model,
+        provider: settings.activeProvider || 'anthropic',
+        api_key: settings.apiKey || undefined,
+        openai_key: settings.openAiKey || undefined,
+        gemini_key: settings.geminiKey || undefined,
+        openrouter_key: settings.openRouterKey || undefined,
+        deepseek_key: settings.deepSeekKey || undefined,
+        groq_key: settings.groqKey || undefined,
+        mistral_key: settings.mistralKey || undefined,
+        xai_key: settings.xAiKey || undefined,
+      })
+      setSyncState('AI response from Python backend')
+      return data.response
+    } catch {
+      setSyncState('AI backend unavailable; local fallback')
     }
 
     const text = userText.toLowerCase()

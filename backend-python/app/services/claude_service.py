@@ -22,12 +22,58 @@ class ClaudeService:
         provider: str = "anthropic",
         openai_key: str = None,
         gemini_key: str = None,
+        openrouter_key: str = None,
+        deepseek_key: str = None,
+        groq_key: str = None,
+        mistral_key: str = None,
+        xai_key: str = None,
     ) -> str:
         provider = (provider or "anthropic").lower()
         if provider == "openai":
             return await self._openai_completion(system_prompt, prompt, model, openai_key)
         if provider == "gemini":
             return await self._gemini_completion(system_prompt, prompt, model, gemini_key)
+        if provider == "openrouter":
+            return await self._openai_compatible_completion(
+                "https://openrouter.ai/api/v1/chat/completions",
+                openrouter_key or os.getenv("OPENROUTER_API_KEY"),
+                system_prompt,
+                prompt,
+                model or "openai/gpt-4o-mini",
+                {"HTTP-Referer": os.getenv("APP_URL", "https://mezomai.vercel.app"), "X-Title": "MEZOMAI"},
+            )
+        if provider == "deepseek":
+            return await self._openai_compatible_completion(
+                "https://api.deepseek.com/chat/completions",
+                deepseek_key or os.getenv("DEEPSEEK_API_KEY"),
+                system_prompt,
+                prompt,
+                model or "deepseek-chat",
+            )
+        if provider == "groq":
+            return await self._openai_compatible_completion(
+                "https://api.groq.com/openai/v1/chat/completions",
+                groq_key or os.getenv("GROQ_API_KEY"),
+                system_prompt,
+                prompt,
+                model or "llama-3.1-8b-instant",
+            )
+        if provider == "mistral":
+            return await self._openai_compatible_completion(
+                "https://api.mistral.ai/v1/chat/completions",
+                mistral_key or os.getenv("MISTRAL_API_KEY"),
+                system_prompt,
+                prompt,
+                model or "mistral-small-latest",
+            )
+        if provider == "xai":
+            return await self._openai_compatible_completion(
+                "https://api.x.ai/v1/chat/completions",
+                xai_key or os.getenv("XAI_API_KEY"),
+                system_prompt,
+                prompt,
+                model or "grok-2-latest",
+            )
         return await self._anthropic_completion(system_prompt, prompt, model, api_key)
 
     async def _anthropic_completion(self, system_prompt: str, prompt: str, model: str = None, api_key: str = None) -> str:
@@ -42,14 +88,34 @@ class ClaudeService:
 
     async def _openai_completion(self, system_prompt: str, prompt: str, model: str = None, api_key: str = None) -> str:
         key = api_key or os.getenv("OPENAI_API_KEY")
-        if not key:
-            raise ValueError("OpenAI API key is missing.")
+        return await self._openai_compatible_completion(
+            "https://api.openai.com/v1/chat/completions",
+            key,
+            system_prompt,
+            prompt,
+            model or "gpt-4o-mini",
+        )
+
+    async def _openai_compatible_completion(
+        self,
+        url: str,
+        api_key: str,
+        system_prompt: str,
+        prompt: str,
+        model: str,
+        extra_headers: dict = None,
+    ) -> str:
+        if not api_key:
+            raise ValueError("AI provider API key is missing.")
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        if extra_headers:
+            headers.update(extra_headers)
         async with httpx.AsyncClient(timeout=30) as client:
             response = await client.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                url,
+                headers=headers,
                 json={
-                    "model": model or "gpt-4o-mini",
+                    "model": model,
                     "messages": [
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": prompt},

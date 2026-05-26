@@ -14,6 +14,11 @@ class CompletionRequest(BaseModel):
     api_key: Optional[str] = None
     openai_key: Optional[str] = None
     gemini_key: Optional[str] = None
+    openrouter_key: Optional[str] = None
+    deepseek_key: Optional[str] = None
+    groq_key: Optional[str] = None
+    mistral_key: Optional[str] = None
+    xai_key: Optional[str] = None
 
 class SummarizeRequest(BaseModel):
     transcript: List[dict]  # List of {"speaker": "user"|"bot", "content": "..."}
@@ -23,6 +28,11 @@ class SummarizeRequest(BaseModel):
     api_key: Optional[str] = None
     openai_key: Optional[str] = None
     gemini_key: Optional[str] = None
+    openrouter_key: Optional[str] = None
+    deepseek_key: Optional[str] = None
+    groq_key: Optional[str] = None
+    mistral_key: Optional[str] = None
+    xai_key: Optional[str] = None
 
 @router.post("/completion")
 async def generate_completion(req: CompletionRequest):
@@ -36,6 +46,11 @@ async def generate_completion(req: CompletionRequest):
             provider=req.provider,
             openai_key=req.openai_key,
             gemini_key=req.gemini_key,
+            openrouter_key=req.openrouter_key,
+            deepseek_key=req.deepseek_key,
+            groq_key=req.groq_key,
+            mistral_key=req.mistral_key,
+            xai_key=req.xai_key,
         )
         return {"response": response}
     except Exception as e:
@@ -64,6 +79,11 @@ async def summarize_meeting(req: SummarizeRequest):
             provider=req.provider,
             openai_key=req.openai_key,
             gemini_key=req.gemini_key,
+            openrouter_key=req.openrouter_key,
+            deepseek_key=req.deepseek_key,
+            groq_key=req.groq_key,
+            mistral_key=req.mistral_key,
+            xai_key=req.xai_key,
         )
         
         # Clean response if LLM added formatting markdown wrappers

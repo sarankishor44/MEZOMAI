@@ -52,6 +52,11 @@ class SettingsController extends Controller
             'apiKey' => 'nullable|string',
             'openAiKey' => 'nullable|string',
             'geminiKey' => 'nullable|string',
+            'openRouterKey' => 'nullable|string',
+            'deepSeekKey' => 'nullable|string',
+            'groqKey' => 'nullable|string',
+            'mistralKey' => 'nullable|string',
+            'xAiKey' => 'nullable|string',
             'elevenLabsKey' => 'nullable|string',
             'dailyKey' => 'nullable|string',
             'activeProvider' => 'nullable|string|max:30'
@@ -79,6 +84,11 @@ class SettingsController extends Controller
             'apiKey' => 'anthropic',
             'openAiKey' => 'openai',
             'geminiKey' => 'gemini',
+            'openRouterKey' => 'openrouter',
+            'deepSeekKey' => 'deepseek',
+            'groqKey' => 'groq',
+            'mistralKey' => 'mistral',
+            'xAiKey' => 'xai',
             'elevenLabsKey' => 'elevenlabs',
             'dailyKey' => 'daily',
         ];
