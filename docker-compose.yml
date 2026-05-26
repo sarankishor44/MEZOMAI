@@ -45,6 +45,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-aria_secret}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - PYTHON_BACKEND_URL=http://python:8001
       - JWT_SECRET=${JWT_SECRET}
       - ENCRYPTION_KEY=aria_aes256_key_change_in_prod_32ch
     depends_on:

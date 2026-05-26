@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
-import { phpApi } from '../utils/api'
+import { getBackendUrls, phpApi, setBackendUrls } from '../utils/api'
 import { isSupabaseConfigured } from '../utils/supabase'
 import { loadSupabaseSettings, saveSupabaseSettings, signOutSupabase } from '../utils/supabaseBackend'
 
@@ -16,6 +16,9 @@ export default function SettingsPage() {
   const { settings, updateSettings, logout } = useStore()
   const [saving, setSaving] = useState(false)
   const [dbStatus, setDbStatus] = useState('Local settings')
+  const [backendUrls, setBackendUrlState] = useState(() => getBackendUrls())
+  const pythonUrlPreview = backendUrls.pythonUrl.replace(/\/$/, '').replace(/\/ai$/, '')
+  const pythonRestPreview = pythonUrlPreview.endsWith('/ai') ? pythonUrlPreview : `${pythonUrlPreview}/ai`
   const voices = typeof speechSynthesis !== 'undefined' ? speechSynthesis.getVoices() : []
 
   React.useEffect(() => {
@@ -72,6 +75,21 @@ export default function SettingsPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  const saveBackendUrls = () => {
+    setBackendUrls({
+      phpUrl: backendUrls.phpUrl,
+      pythonUrl: backendUrls.pythonUrl,
+    })
+    setBackendUrlState(getBackendUrls())
+    setDbStatus('Backend API URLs saved')
+  }
+
+  const resetBackendUrls = () => {
+    setBackendUrls({ phpUrl: '', pythonUrl: '' })
+    setBackendUrlState(getBackendUrls())
+    setDbStatus('Backend API URLs reset')
   }
 
   const testVoice = () => {
@@ -164,6 +182,31 @@ export default function SettingsPage() {
         </section>
 
         <section style={panel}>
+          <SectionTitle title="Backend API URLs" sub="Connect this frontend to deployed PHP and Python backends."/>
+          <Row label="PHP API">
+            <input
+              value={backendUrls.phpUrl}
+              onChange={e => setBackendUrlState(current => ({ ...current, phpUrl: e.target.value }))}
+              placeholder="https://your-php-host.com/api"
+              style={{ ...input, width: '100%' }}
+            />
+          </Row>
+          <Row label="Python API">
+            <input
+              value={backendUrls.pythonUrl}
+              onChange={e => setBackendUrlState(current => ({ ...current, pythonUrl: e.target.value }))}
+              placeholder="https://your-python-host.com"
+              style={{ ...input, width: '100%' }}
+            />
+          </Row>
+          <div style={hintBox}>Python REST calls resolve to {pythonRestPreview}</div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+            <button onClick={saveBackendUrls} className="gold-glow-btn" style={{ ...primaryBtn, marginTop: 0 }}>Save URLs</button>
+            <button onClick={resetBackendUrls} style={smallBtn}>Reset</button>
+          </div>
+        </section>
+
+        <section style={panel}>
           <SectionTitle title="Personality and Data" sub="Prompt presets and local app data controls."/>
           <label style={label}>System Prompt</label>
           <textarea value={settings.systemPrompt} onChange={e => updateSettings({ systemPrompt: e.target.value })} rows={5} style={{ ...input, resize: 'vertical', width: '100%' }}/>
@@ -209,6 +252,7 @@ const panel = { background: 'var(--bg1)', border: '1px solid var(--b1)', borderR
 const sectionTitle = { fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 800 }
 const sectionSub = { color: 'var(--t3)', fontSize: 12, marginTop: 4, lineHeight: 1.5 }
 const hint = { color: 'var(--t3)', fontSize: 11, marginTop: 3 }
+const hintBox = { background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 9, color: 'var(--t3)', fontSize: 12, lineHeight: 1.5, padding: 12, marginTop: 12 }
 const input = { background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 9, padding: '10px 12px', color: 'var(--t1)', minWidth: 0 }
 const smallBtn = { background: 'var(--bg2)', border: '1px solid var(--b1)', color: 'var(--t2)', padding: '9px 10px', fontSize: 12, fontWeight: 800 }
 const dangerBtn = { background: 'rgba(220,38,38,.1)', border: '1px solid rgba(220,38,38,.25)', color: 'var(--red)', padding: '10px 14px', fontWeight: 800 }

@@ -1,39 +1,50 @@
 import axios from 'axios'
 
+const trimTrailingSlash = (value) => (value || '').trim().replace(/\/$/, '')
+
+const stripPythonRoutePrefix = (value) => {
+  const base = trimTrailingSlash(value)
+  return base.endsWith('/ai') ? base.slice(0, -3) : base
+}
+
 export const getPhpBase = () => {
-  return localStorage.getItem('aria_php_api_url') || import.meta.env.VITE_PHP_API || '/api'
+  return trimTrailingSlash(localStorage.getItem('aria_php_api_url') || import.meta.env.VITE_PHP_API || '/api')
 }
 
 export const getPyBase = () => {
-  return localStorage.getItem('aria_py_api_url') || import.meta.env.VITE_PYTHON_API || '/ai'
+  return trimTrailingSlash(localStorage.getItem('aria_py_api_url') || import.meta.env.VITE_PYTHON_API || '/ai')
+}
+
+export const getPyRootBase = () => {
+  return stripPythonRoutePrefix(getPyBase())
 }
 
 export const getPyRestBase = () => {
-  const base = getPyBase().replace(/\/$/, '')
+  const base = getPyBase()
   if (base === '/ai' || base.endsWith('/ai')) return base
   return `${base}/ai`
 }
 
 export const setBackendUrls = ({ phpUrl, pythonUrl }) => {
-  if (phpUrl) localStorage.setItem('aria_php_api_url', phpUrl.replace(/\/$/, ''))
+  if (phpUrl) localStorage.setItem('aria_php_api_url', trimTrailingSlash(phpUrl))
   else localStorage.removeItem('aria_php_api_url')
 
-  if (pythonUrl) localStorage.setItem('aria_py_api_url', pythonUrl.replace(/\/$/, ''))
+  if (pythonUrl) localStorage.setItem('aria_py_api_url', stripPythonRoutePrefix(pythonUrl))
   else localStorage.removeItem('aria_py_api_url')
 }
 
 export const getBackendUrls = () => ({
   phpUrl: getPhpBase(),
-  pythonUrl: getPyBase(),
+  pythonUrl: getPyRootBase(),
   pythonRestUrl: getPyRestBase(),
 })
 
-// ── PHP Laravel REST API ──────────────────────────────────────
 export const phpApi = axios.create({
-  get baseURL() { return getPhpBase() }
+  baseURL: getPhpBase(),
 })
 
 phpApi.interceptors.request.use((config) => {
+  config.baseURL = getPhpBase()
   const token = localStorage.getItem('aria_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
@@ -47,7 +58,6 @@ phpApi.interceptors.response.use(
       if (!token.startsWith('supabase:')) {
         localStorage.removeItem('aria_token')
         localStorage.removeItem('aria_user')
-        // Only redirect if not already on login
         if (!window.location.pathname.includes('/login') && window.location.pathname !== '/') {
           window.location.href = '/'
         }
@@ -57,31 +67,29 @@ phpApi.interceptors.response.use(
   }
 )
 
-// ── Python FastAPI ────────────────────────────────────────────
 export const pyApi = axios.create({
-  get baseURL() { return getPyRestBase() }
+  baseURL: getPyRestBase(),
 })
 
 pyApi.interceptors.request.use((config) => {
+  config.baseURL = getPyRestBase()
   const token = localStorage.getItem('aria_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
-// ── WebSocket helper ──────────────────────────────────────────
 export const createWebSocket = (path) => {
   const token = localStorage.getItem('aria_token')
-  const pyUrl = getPyBase()
-  
+  const pyUrl = getPyRootBase()
+
   let wsUrl = ''
   if (pyUrl.startsWith('http')) {
-    // Replace http with ws
-    wsUrl = pyUrl.replace(/^http/, 'ws').replace(/\/$/, '') + '/ws' + path
+    wsUrl = pyUrl.replace(/^http/, 'ws') + '/ws' + path
   } else {
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
     const host = window.location.host
     wsUrl = `${protocol}://${host}/ws${path}`
   }
 
-  return new WebSocket(`${wsUrl}?token=${token}`)
+  return new WebSocket(`${wsUrl}?token=${token || ''}`)
 }

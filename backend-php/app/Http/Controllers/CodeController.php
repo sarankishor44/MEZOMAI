@@ -139,7 +139,7 @@ class CodeController extends Controller
         $startTime = microtime(true);
 
         // Proxy request to Python FastAPI Sandbox server
-        $pythonUrl = env('PYTHON_BACKEND_URL', 'http://backend-python:8000') . '/code/run';
+        $pythonUrl = rtrim(env('PYTHON_BACKEND_URL', 'http://python:8001'), '/') . '/code/run';
         
         try {
             $response = Http::timeout(10)->post($pythonUrl, [
