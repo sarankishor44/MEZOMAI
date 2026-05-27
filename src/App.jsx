@@ -9,6 +9,8 @@ import AnalyticsPage from './pages/AnalyticsPage'
 import SettingsPage from './pages/SettingsPage'
 import LoginPage from './pages/LoginPage'
 import PikaGuidePage from './pages/PikaGuidePage'
+import AgentSetupPage from './pages/AgentSetupPage'
+import WalletPage from './pages/WalletPage'
 import { phpApi } from './utils/api'
 
 export default function App() {
@@ -45,6 +47,8 @@ export default function App() {
         {page === 'code'       && <CodePage />}
         {page === 'meetings'   && <MeetingsPage />}
         {page === 'pika-guide' && <PikaGuidePage />}
+        {page === 'agent-setup' && <AgentSetupPage />}
+        {page === 'wallet'     && <WalletPage />}
         {page === 'analytics'  && <AnalyticsPage />}
         {page === 'settings'   && <SettingsPage />}
       </main>
