@@ -1,7 +1,11 @@
 import os
+import re
 import uvicorn
-from fastapi import FastAPI
+from dotenv import load_dotenv
+load_dotenv()  # Load .env variables before anything else
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from app.routers import ai, code_run, chat_ws, meeting_ws, meeting_bot
 
 app = FastAPI(
@@ -10,16 +14,53 @@ app = FastAPI(
     version="1.0.0"
 )
 
-allowed_origins = [
+# Parse allowed origins from env var
+_env_origins = [
     origin.strip()
-    for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
+    for origin in os.getenv(
+        "ALLOWED_ORIGINS",
+        "https://mezomai.vercel.app,https://mezomai-oao1.vercel.app,https://mezomaiadmin.vercel.app,https://mezomai-1iyn.vercel.app,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
+    ).split(",")
     if origin.strip()
 ]
 
-# CORS configuration
+# Also allow any *.vercel.app subdomain dynamically (handles preview deploys)
+_VERCEL_PATTERN = re.compile(r"^https://[a-zA-Z0-9\-]+\.vercel\.app$")
+
+def _is_allowed_origin(origin: str) -> bool:
+    if origin in _env_origins:
+        return True
+    if _VERCEL_PATTERN.match(origin):
+        return True
+    return False
+
+# Custom CORS middleware that handles vercel.app wildcards
+@app.middleware("http")
+async def cors_middleware(request: Request, call_next):
+    origin = request.headers.get("origin", "")
+    if request.method == "OPTIONS":
+        # Preflight
+        response = JSONResponse(content={}, status_code=200)
+        if _is_allowed_origin(origin):
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+            response.headers["Access-Control-Max-Age"] = "86400"
+        return response
+
+    response = await call_next(request)
+    if _is_allowed_origin(origin):
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
+
+# Keep standard CORSMiddleware as fallback for explicit origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=_env_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

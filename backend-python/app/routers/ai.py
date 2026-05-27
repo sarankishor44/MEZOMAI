@@ -56,7 +56,19 @@ async def generate_completion(req: CompletionRequest):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"AI completion failed: {type(e).__name__}")
+        # Surface the actual error detail for debugging
+        detail = str(e)
+        # If httpx raised it, try to get the response body
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                body = e.response.json()
+                detail = body.get('error', {}).get('message') or body.get('message') or body.get('detail') or detail
+            except Exception:
+                try:
+                    detail = e.response.text[:400] or detail
+                except Exception:
+                    pass
+        raise HTTPException(status_code=502, detail=f"AI completion failed: {detail}")
 
 @router.post("/summarize")
 async def summarize_meeting(req: SummarizeRequest):
