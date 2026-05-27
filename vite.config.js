@@ -9,8 +9,6 @@ export default defineConfig({
         manualChunks: {
           react: ['react', 'react-dom'],
           charts: ['recharts'],
-          supabase: ['@supabase/supabase-js'],
-          sentry: ['@sentry/react'],
         },
       },
     },

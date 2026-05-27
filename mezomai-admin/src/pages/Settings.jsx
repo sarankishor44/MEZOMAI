@@ -5,21 +5,11 @@ import { exportEnv, loadAdminConfig, saveAdminConfig } from '../utils/adminConfi
 const fields = [
   ['phpApiUrl', 'PHP API URL', 'https://your-php-host.com/api', Server],
   ['pythonApiUrl', 'Python API URL', 'https://your-python-api.vercel.app', Server],
-  ['supabaseUrl', 'Supabase URL', 'https://your-project.supabase.co', Database],
-  ['supabaseAnonKey', 'Supabase publishable key', 'sb_publishable_...', KeyRound],
-  ['sentryDsn', 'Sentry DSN', 'https://...@...ingest.sentry.io/...', ShieldCheck],
-  ['resendApiKey', 'Resend API key', 're_...', KeyRound],
-  ['resendFrom', 'Resend From', 'MEZOMAI <no-reply@yourdomain.com>', KeyRound],
-  ['anthropicApiKey', 'Backend Anthropic key', 'sk-ant-api03-...', KeyRound],
-  ['openAiApiKey', 'Backend OpenAI key', 'sk-...', KeyRound],
-  ['geminiApiKey', 'Backend Gemini key', 'AIza...', KeyRound],
-  ['openRouterApiKey', 'Backend OpenRouter key', 'sk-or-...', KeyRound],
-  ['deepSeekApiKey', 'Backend DeepSeek key', 'sk-...', KeyRound],
-  ['groqApiKey', 'Backend Groq key', 'gsk_...', KeyRound],
-  ['mistralApiKey', 'Backend Mistral key', '...', KeyRound],
-  ['xAiApiKey', 'Backend xAI key', 'xai-...', KeyRound],
-  ['meetingBotApiUrl', 'Meeting Bot API URL', 'https://your-meeting-bot-service.com', Server],
-  ['meetingBotApiKey', 'Meeting Bot API key', 'bot secret...', KeyRound],
+  ['dbHost', 'Database Host', 'mysql.railway.internal', Database],
+  ['dbPort', 'Database Port', '3306', Database],
+  ['dbDatabase', 'Database Name', 'mezomai', Database],
+  ['dbUsername', 'Database Username', 'root', KeyRound],
+  ['dbPassword', 'Database Password', 'secret', KeyRound],
 ];
 
 export default function Settings() {

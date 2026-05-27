@@ -3,13 +3,7 @@ import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
 import { phpApi, pyApi } from '../utils/api'
 import { activeProvider, aiErrorMessage, aiRequestConfig, hasProviderKey, providerModel } from '../utils/aiConfig'
-import { isSupabaseConfigured } from '../utils/supabase'
-import {
-  createSupabaseChatSession,
-  listSupabaseChatSessions,
-  loadSupabaseMessages,
-  saveSupabaseMessage,
-} from '../utils/supabaseBackend'
+
 
 const MODES = ['Friendly', 'Developer', 'Coach', 'Professional']
 const PROMPTS = ['Review this idea', 'Draft a release note', 'Explain the code', 'Create meeting agenda']
@@ -61,17 +55,6 @@ export default function ChatPage() {
       }
       setSyncState('Synced with PHP')
     } catch {
-      if (isSupabaseConfigured) {
-        try {
-          const normalized = await listSupabaseChatSessions()
-          setSessions(normalized.length ? normalized : sessions)
-          if (normalized.length && activeSession === 'default') {
-            setActiveSession(normalized[0].uuid)
-          }
-          setSyncState('Synced with Supabase')
-          return
-        } catch {}
-      }
       setSyncState('Local mode')
     }
   }
@@ -89,18 +72,6 @@ export default function ChatPage() {
       setActiveSession(data.uuid)
       return data.uuid
     } catch {
-      if (isSupabaseConfigured) {
-        try {
-          const session = await createSupabaseChatSession({
-            title: input.trim().slice(0, 60) || 'New Chat',
-            personality: selectedMode.toLowerCase(),
-          })
-          addSession(session)
-          setActiveSession(session.uuid)
-          setSyncState('Created in Supabase')
-          return session.uuid
-        } catch {}
-      }
       return 'default'
     }
   }
@@ -111,14 +82,6 @@ export default function ChatPage() {
       setMessages(data.map(toUiMessage))
       setSyncState('Messages loaded from PHP')
     } catch {
-      if (isSupabaseConfigured) {
-        try {
-          const data = await loadSupabaseMessages(sessionUuid)
-          setMessages(data.map(toUiMessage))
-          setSyncState('Messages loaded from Supabase')
-          return
-        } catch {}
-      }
       setSyncState('Using local messages')
     }
   }
@@ -135,13 +98,6 @@ export default function ChatPage() {
       setSyncState('Saved')
       return toUiMessage(data)
     } catch {
-      if (isSupabaseConfigured) {
-        try {
-          const data = await saveSupabaseMessage(sessionUuid, message)
-          setSyncState('Saved to Supabase')
-          return toUiMessage(data)
-        } catch {}
-      }
       setSyncState('Save failed: local only')
       return null
     }
@@ -217,18 +173,6 @@ export default function ChatPage() {
       addSession(session)
       setActiveSession(data.uuid)
     } catch {
-      if (isSupabaseConfigured) {
-        try {
-          const session = await createSupabaseChatSession({
-            title: 'New Chat',
-            personality: selectedMode.toLowerCase(),
-          })
-          addSession(session)
-          setActiveSession(session.uuid)
-          setSyncState('Created in Supabase')
-          return
-        } catch {}
-      }
       setActiveSession('default')
     }
   }

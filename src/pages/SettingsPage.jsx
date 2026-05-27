@@ -2,8 +2,7 @@ import React, { useState } from 'react'
 import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
 import { phpApi } from '../utils/api'
-import { isSupabaseConfigured } from '../utils/supabase'
-import { loadSupabaseSettings, saveSupabaseSettings, signOutSupabase } from '../utils/supabaseBackend'
+
 
 const PRESETS = [
   ['Friendly', 'friendly', (name) => `You are ${name}, a warm and helpful AI assistant. Keep answers clear and practical.`],
@@ -31,14 +30,6 @@ export default function SettingsPage() {
       updateSettings(data.settings)
       setDbStatus('Loaded from DB')
     } catch {
-      if (isSupabaseConfigured) {
-        try {
-          const data = await loadSupabaseSettings()
-          updateSettings(data)
-          setDbStatus('Loaded from Supabase')
-          return
-        } catch {}
-      }
       setDbStatus('Local settings')
     }
   }
@@ -68,16 +59,6 @@ export default function SettingsPage() {
       })
       setDbStatus('Saved to DB')
     } catch (e) {
-      if (isSupabaseConfigured) {
-        try {
-          await saveSupabaseSettings(settings)
-          setDbStatus('Saved to Supabase')
-          return
-        } catch (supabaseError) {
-          setDbStatus(supabaseError.message || 'Supabase save failed')
-          return
-        }
-      }
       setDbStatus(e.response?.data?.message || 'DB save failed')
     } finally {
       setSaving(false)
@@ -95,7 +76,6 @@ export default function SettingsPage() {
   }
 
   const signOut = async () => {
-    if (isSupabaseConfigured) await signOutSupabase()
     logout()
   }
 

@@ -3,8 +3,7 @@ import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
 import { phpApi, pyApi } from '../utils/api'
 import { activeProvider, aiErrorMessage, aiRequestConfig, hasProviderKey, providerModel } from '../utils/aiConfig'
-import { isSupabaseConfigured } from '../utils/supabase'
-import { createSupabaseCodeFile, listSupabaseCodeFiles, saveSupabaseCodeFile } from '../utils/supabaseBackend'
+
 
 const DEFAULT_FILES = [
   { id: 'local-main', uuid: null, filename: 'main.py', name: 'main.py', path: 'workspace/main.py', language: 'python', lang: 'python', content: `def greet(name):\n    print(f"Hello, {name}! Welcome to MEZOMAI AI Platform.")\n\ngreet("Aria Operator")\n` },
@@ -207,24 +206,6 @@ export default function CodePage() {
       }
       setSyncState('Synced with PHP')
     } catch {
-      if (isSupabaseConfigured) {
-        try {
-          const data = await listSupabaseCodeFiles()
-          if (data.length === 0) {
-            const seeded = await createSupabaseCodeFile(DEFAULT_FILES[0])
-            setFiles([normalizeFile(seeded)])
-            setActiveFileId(seeded.id)
-            setOpenTabs([seeded.id])
-          } else {
-            const normalized = data.map(normalizeFile)
-            setFiles(normalized)
-            setActiveFileId(normalized[0].id)
-            setOpenTabs([normalized[0].id])
-          }
-          setSyncState('Synced with Supabase')
-          return
-        } catch {}
-      }
       setSyncState('Local fallback')
     }
   }
@@ -303,14 +284,6 @@ export default function CodePage() {
       setFiles(current => current.map(f => f.id === file.id ? normalizeFile(data) : f))
       setSyncState('Saved to PHP')
     } catch {
-      if (isSupabaseConfigured) {
-        try {
-          const data = await saveSupabaseCodeFile(file, patch)
-          setFiles(current => current.map(f => f.id === file.id ? normalizeFile(data) : f))
-          setSyncState('Saved to Supabase')
-          return
-        } catch {}
-      }
       setSyncState('Save failed: local only')
     }
   }
@@ -359,16 +332,6 @@ export default function CodePage() {
       setOpenTabs(current => current.map(id => id === localFile.id ? saved.id : id))
       setSyncState('Created in PHP')
     } catch {
-      if (isSupabaseConfigured) {
-        try {
-          const saved = normalizeFile(await createSupabaseCodeFile(localFile))
-          setFiles(current => current.map(f => f.id === localFile.id ? saved : f))
-          setActiveFileId(saved.id)
-          setOpenTabs(current => current.map(id => id === localFile.id ? saved.id : id))
-          setSyncState('Created in Supabase')
-          return
-        } catch {}
-      }
       setSyncState('Created locally')
     }
   }
@@ -424,9 +387,7 @@ export default function CodePage() {
       setTerminalLogs(prev => [...prev, ...nextLogs])
       setSyncState('Run saved to PHP')
     } catch (e) {
-      const message = isSupabaseConfigured
-        ? 'Sandbox runner needs a deployed PHP/Python API. Set VITE_PHP_API and VITE_PYTHON_API on Vercel for /code/run.'
-        : e.response?.data?.stderr || e.response?.data?.error || e.message
+      const message = e.response?.data?.stderr || e.response?.data?.error || e.message
       setTerminalLogs(prev => [...prev, { type: 'error', text: message }])
       setSyncState('Run failed')
     } finally {
