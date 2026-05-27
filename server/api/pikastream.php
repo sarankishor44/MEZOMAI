@@ -16,11 +16,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // Ensure scripts directory exists
 $scripts_dir = __DIR__ . '/../scripts';
 
-// Get JSON input
+// Get JSON input or Form POST
 $input = json_decode(file_get_contents('php://input'), true);
-$action = $input['action'] ?? '';
+$action = $_POST['action'] ?? $input['action'] ?? '';
 
 switch ($action) {
+    case 'upload-selfie':
+        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = __DIR__ . '/../uploads/';
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+            $filename = time() . '_' . basename($_FILES['image']['name']);
+            move_uploaded_file($_FILES['image']['tmp_name'], $upload_dir . $filename);
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Selfie uploaded successfully.',
+                'filename' => $filename
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'No image uploaded']);
+        }
+        break;
+
     case 'join':
         $meetUrl = escapeshellarg($input['meetUrl'] ?? '');
         $botName = escapeshellarg($input['botName'] ?? '');

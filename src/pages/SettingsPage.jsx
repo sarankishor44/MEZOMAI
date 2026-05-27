@@ -159,6 +159,18 @@ export default function SettingsPage() {
 
 
         <section style={panel}>
+          <SectionTitle title="API Keys" sub="Provide keys for the AI providers you want to use. Keys are stored locally."/>
+          <SecretRow label="Anthropic Key" value={settings.apiKey} onChange={v => updateSettings({ apiKey: v })} placeholder="sk-ant-..." />
+          <SecretRow label="OpenAI Key" value={settings.openAiKey} onChange={v => updateSettings({ openAiKey: v })} placeholder="sk-..." />
+          <SecretRow label="Gemini Key" value={settings.geminiKey} onChange={v => updateSettings({ geminiKey: v })} placeholder="AIza..." />
+          <SecretRow label="OpenRouter Key" value={settings.openRouterKey} onChange={v => updateSettings({ openRouterKey: v })} placeholder="sk-or-..." />
+          <SecretRow label="DeepSeek Key" value={settings.deepSeekKey} onChange={v => updateSettings({ deepSeekKey: v })} placeholder="sk-..." />
+          <SecretRow label="Groq Key" value={settings.groqKey} onChange={v => updateSettings({ groqKey: v })} placeholder="gsk_..." />
+          <SecretRow label="Mistral Key" value={settings.mistralKey} onChange={v => updateSettings({ mistralKey: v })} placeholder="..." />
+          <SecretRow label="xAI Key" value={settings.xAiKey} onChange={v => updateSettings({ xAiKey: v })} placeholder="xai-..." />
+        </section>
+
+        <section style={panel}>
           <SectionTitle title="Personality and Data" sub="Prompt presets and local app data controls."/>
           <label style={label}>System Prompt</label>
           <textarea value={settings.systemPrompt} onChange={e => updateSettings({ systemPrompt: e.target.value })} rows={5} style={{ ...input, resize: 'vertical', width: '100%' }}/>

@@ -6,15 +6,14 @@ const NAV = [
   { id: 'chat', label: 'Chat', icon: ChatIcon, color: ['#34d399', '#0f766e'] },
   { id: 'code', label: 'Code', icon: CodeIcon, color: ['#a78bfa', '#6d28d9'] },
   { id: 'meetings', label: 'Meet', icon: VideoIcon, color: ['#fb7185', '#be123c'] },
-  { id: 'agent-setup', label: 'Setup', icon: BookIcon, color: ['#c084fc', '#9333ea'] },
+  { id: 'agent-setup', label: 'Setup', icon: BookIcon, color: ['#c084fc', '#9333ea'], hideIfSetup: true },
   { id: 'wallet', label: 'Wallet', icon: WalletIcon, color: ['#4ade80', '#16a34a'] },
-  { id: 'pika-guide', label: 'Docs', icon: BookIcon, color: ['#f472b6', '#db2777'] },
   { id: 'analytics', label: 'Stats', icon: ChartIcon, color: ['#fbbf24', '#d97706'] },
   { id: 'settings', label: 'Settings', icon: GearIcon, color: ['#94a3b8', '#475569'] },
 ]
 
 export default function Sidebar() {
-  const { page, setPage, user, theme, toggleTheme, logout } = useStore()
+  const { page, setPage, user, theme, toggleTheme, logout, settings } = useStore()
 
   return (
     <>
@@ -41,7 +40,8 @@ export default function Sidebar() {
       </header>
 
       <nav className="ios-dock" aria-label="App Dock">
-        {NAV.map(({ id, label, icon: Icon, color }) => {
+        {NAV.map(({ id, label, icon: Icon, color, hideIfSetup }) => {
+          if (hideIfSetup && settings.hasCompletedSetup) return null
           const active = page === id
           return (
             <button key={id} className={`ios-dock-app ${active ? 'active' : ''}`} onClick={() => setPage(id)} title={label}>

@@ -49,9 +49,22 @@ export default function AgentSetupPage() {
     }))
   }
 
+  const { updateSettings, setPage } = require('../store').useStore()
+
   const handleGenerate = async () => {
-    alert("Generating AI Agent via our PHP API...");
-    // Future integration with PHP backend
+    if (agentData.image) {
+      const formData = new FormData()
+      formData.append('image', agentData.image)
+      formData.append('action', 'upload-selfie')
+      try {
+        await fetch('http://localhost:8000/api/pikastream.php', { method: 'POST', body: formData })
+      } catch (e) {
+        console.error("Upload failed", e)
+      }
+    }
+    
+    updateSettings({ hasCompletedSetup: true })
+    setPage('dashboard')
   }
 
   return (
@@ -74,11 +87,12 @@ export default function AgentSetupPage() {
           <div className="fade-in">
             <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem', color: STYLE_COLORS.purple }}>Step 01: Establish Visual Identity</h2>
             <p style={{ color: '#9ca3af', marginBottom: '2rem' }}>Provide an image of yourself or take a selfie. This data helps form the basis of your digital representative.</p>
-            <div style={{ border: '2px dashed rgba(255,255,255,0.2)', borderRadius: '16px', padding: '3rem', textAlign: 'center', cursor: 'pointer' }}>
+            <label style={{ display: 'block', border: '2px dashed rgba(255,255,255,0.2)', borderRadius: '16px', padding: '3rem', textAlign: 'center', cursor: 'pointer', position: 'relative' }}>
+              <input type="file" accept="image/*" onChange={(e) => setAgentData({...agentData, image: e.target.files[0]})} style={{ opacity: 0, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', cursor: 'pointer' }} />
               <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📸</div>
-              <p style={{ fontWeight: 'bold' }}>Click to upload selfie</p>
+              <p style={{ fontWeight: 'bold' }}>{agentData.image ? agentData.image.name : 'Click to upload selfie'}</p>
               <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>JPG, PNG up to 10MB</p>
-            </div>
+            </label>
             <div style={{ marginTop: '1rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: '#9ca3af' }}>Agent Name</label>
               <input 
