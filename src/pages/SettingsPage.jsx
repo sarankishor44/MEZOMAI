@@ -47,7 +47,6 @@ export default function SettingsPage() {
         voice_speed: settings.voiceSpeed,
         voice_pitch: settings.voicePitch,
         model: settings.model,
-        model: settings.model,
         activeProvider: settings.activeProvider,
       })
       setDbStatus('Saved to DB')
