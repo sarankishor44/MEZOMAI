@@ -110,6 +110,7 @@ export const useStore = create((set, get) => ({
     xAiKey: '',
     elevenLabsKey: '',
     dailyKey: '',
+    pythonApiUrl: '',
     activeProvider: 'anthropic',
     model: 'claude-3-5-sonnet-20241022',
     avatarName: 'ARIA',

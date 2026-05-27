@@ -198,24 +198,31 @@ export default function MeetingsPage() {
 
     setBotJoinStatus(`Sending ${settings.avatarName} to ${platform.name}...`)
     try {
-      const res = await fetch('http://localhost:8000/api/pikastream.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'join',
-          meetUrl: meetingUrl,
-          botName: settings.avatarName || 'MEZOMAI AI',
-        })
-      });
-      const data = await res.json();
+      const { data } = await pyApi.post('/meeting-bot/join', {
+        meeting_url: meetingUrl,
+        bot_name: settings.avatarName || 'MEZOMAI AI',
+        entry_message: `${settings.avatarName || 'MEZOMAI AI'} joined to capture notes and action items.`,
+        avatar: {
+          name: settings.avatarName || 'ARIA',
+          gender: settings.avatarGender || 'female',
+          style: settings.avatarStyle || 'gold',
+          personality: settings.personality || 'friendly',
+          voice_name: settings.voiceName || '',
+        },
+      })
 
-      if (data.success) {
-        setBotJoinStatus(`${settings.avatarName} is joining ${platform.name}. Session ID: ${data.sessionId}.`)
+      if (data.status === 'joining') {
+        setBotJoinStatus(`${settings.avatarName} is joining ${platform.name}. Bot ID: ${data.bot_id || 'pending'}.`)
       } else {
-        setBotJoinStatus(data.error || data.message || 'Failed to join meeting via custom Python script.')
+        setBotJoinStatus(data.message || data.details || 'Meeting bot provider is not configured.')
       }
     } catch (e) {
-      setBotJoinStatus('Could not reach the local PHP backend (pikastream.php). Make sure the PHP server is running on port 8000.')
+      const detail = e.response?.data?.detail
+      if (detail === 'Not Found') {
+        setBotJoinStatus('Meeting bot route was not found. Please set your Python API URL in Settings to your Vercel deployment URL (e.g. https://mezomai-sili.vercel.app).')
+        return
+      }
+      setBotJoinStatus(e.response?.data?.message || detail || 'Could not reach the Python meeting-bot backend on Vercel.')
     }
   }
 

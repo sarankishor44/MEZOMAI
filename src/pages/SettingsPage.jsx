@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
-import { phpApi } from '../utils/api'
+import { phpApi, setBackendUrls } from '../utils/api'
 
 
 const PRESETS = [
@@ -157,6 +157,11 @@ export default function SettingsPage() {
         </section>
 
 
+
+        <section style={panel}>
+          <SectionTitle title="Backend URLs" sub="Configure your remote API endpoints (e.g. Vercel deployment)."/>
+          <SecretRow label="Python API (Vercel)" value={settings.pythonApiUrl} onChange={v => { updateSettings({ pythonApiUrl: v }); setBackendUrls({ pythonUrl: v }) }} placeholder="https://mezomai-sili.vercel.app" />
+        </section>
 
         <section style={panel}>
           <SectionTitle title="API Keys" sub="Provide keys for the AI providers you want to use. Keys are stored locally."/>
