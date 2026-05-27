@@ -19,7 +19,7 @@ _env_origins = [
     origin.strip()
     for origin in os.getenv(
         "ALLOWED_ORIGINS",
-        "https://mezomai.vercel.app,https://mezomai-oao1.vercel.app,https://mezomaiadmin.vercel.app,https://mezomai-1iyn.vercel.app,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
+        "https://mezomai.vercel.app,https://mezomaipy.vercel.app,https://mezomaiadmin.vercel.app,https://mezomai-1iyn.vercel.app,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
     ).split(",")
     if origin.strip()
 ]

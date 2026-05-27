@@ -110,7 +110,7 @@ export const useStore = create((set, get) => ({
     xAiKey: '',
     elevenLabsKey: '',
     dailyKey: '',
-    pythonApiUrl: 'https://mezomai-oao1.vercel.app',
+    pythonApiUrl: 'https://mezomaipy.vercel.app',
     meetingBotUrl: 'https://mezomai-1iyn.vercel.app',
     activeProvider: 'anthropic',
     model: 'claude-3-5-sonnet-20241022',

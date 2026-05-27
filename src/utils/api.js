@@ -12,7 +12,7 @@ export const getPhpBase = () => {
 }
 
 export const getPyBase = () => {
-  return trimTrailingSlash(localStorage.getItem('aria_py_api_url') || import.meta.env.VITE_PYTHON_API || 'https://mezomai-oao1.vercel.app')
+  return trimTrailingSlash(localStorage.getItem('aria_py_api_url') || import.meta.env.VITE_PYTHON_API || 'https://mezomaipy.vercel.app')
 }
 
 export const getPyRootBase = () => {
