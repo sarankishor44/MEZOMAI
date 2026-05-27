@@ -47,15 +47,8 @@ export default function SettingsPage() {
         voice_speed: settings.voiceSpeed,
         voice_pitch: settings.voicePitch,
         model: settings.model,
+        model: settings.model,
         activeProvider: settings.activeProvider,
-        apiKey: settings.apiKey,
-        openAiKey: settings.openAiKey,
-        geminiKey: settings.geminiKey,
-        openRouterKey: settings.openRouterKey,
-        deepSeekKey: settings.deepSeekKey,
-        groqKey: settings.groqKey,
-        mistralKey: settings.mistralKey,
-        xAiKey: settings.xAiKey,
       })
       setDbStatus('Saved to DB')
     } catch (e) {
@@ -164,22 +157,7 @@ export default function SettingsPage() {
           <button onClick={testVoice} className="gold-glow-btn" style={primaryBtn}>Test Voice</button>
         </section>
 
-        <section style={panel}>
-          <SectionTitle title="AI API Keys" sub="Save your own model keys. Leave blank to use backend env keys when configured."/>
-          <SecretRow label="Claude" value={settings.apiKey || ''} onChange={value => updateSettings({ apiKey: value })} placeholder="sk-ant-api03-..." />
-          <SecretRow label="ChatGPT / OpenAI" value={settings.openAiKey || ''} onChange={value => updateSettings({ openAiKey: value })} placeholder="sk-..." />
-          <SecretRow label="Gemini" value={settings.geminiKey || ''} onChange={value => updateSettings({ geminiKey: value })} placeholder="AIza..." />
-          <SecretRow label="OpenRouter" value={settings.openRouterKey || ''} onChange={value => updateSettings({ openRouterKey: value })} placeholder="sk-or-..." />
-          <SecretRow label="DeepSeek" value={settings.deepSeekKey || ''} onChange={value => updateSettings({ deepSeekKey: value })} placeholder="sk-..." />
-          <SecretRow label="Groq" value={settings.groqKey || ''} onChange={value => updateSettings({ groqKey: value })} placeholder="gsk_..." />
-          <SecretRow label="Mistral" value={settings.mistralKey || ''} onChange={value => updateSettings({ mistralKey: value })} placeholder="..." />
-          <SecretRow label="xAI" value={settings.xAiKey || ''} onChange={value => updateSettings({ xAiKey: value })} placeholder="xai-..." />
-          {getAiKeyHints(settings.keyHints).length > 0 && (
-            <div style={hintBox}>
-              Saved keys: {getAiKeyHints(settings.keyHints).map(key => `${key.provider} ${key.key_hint || ''}`).join(', ')}
-            </div>
-          )}
-        </section>
+
 
         <section style={panel}>
           <SectionTitle title="Personality and Data" sub="Prompt presets and local app data controls."/>
@@ -226,10 +204,7 @@ function SecretRow({ label, value, onChange, placeholder }) {
   )
 }
 
-function getAiKeyHints(keyHints) {
-  if (!Array.isArray(keyHints)) return []
-  return keyHints.filter(key => AI_KEY_PROVIDERS.has(key.provider))
-}
+
 
 const page = { flex: 1, overflowY: 'auto', padding: 28 }
 const header = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Copy, Database, KeyRound, Server, ShieldCheck } from 'lucide-react';
 import { exportEnv, loadAdminConfig, saveAdminConfig } from '../utils/adminConfig';
+import AvatarFace from '../components/AvatarFace';
 
 const fields = [
   ['phpApiUrl', 'PHP API URL', 'https://your-php-host.com/api', Server],
@@ -35,8 +36,9 @@ export default function Settings() {
 
   return (
     <div>
-      <header className="page-header">
-        <div>
+      <header className="page-header" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+        <AvatarFace size={60} gender="female" />
+        <div style={{ flex: 1 }}>
           <h1>Backend Control</h1>
           <p className="page-subtitle">Configure private PHP/Python endpoints and deployment keys from admin only.</p>
         </div>
