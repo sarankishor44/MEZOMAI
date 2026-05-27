@@ -3,6 +3,7 @@ import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
 import { phpApi, pyApi } from '../utils/api'
 import { activeProvider, aiErrorMessage, aiRequestConfig, hasProviderKey, providerModel } from '../utils/aiConfig'
+import { callAIDirectly, isNetworkError } from '../utils/directAI'
 
 
 const MODES = ['Friendly', 'Developer', 'Coach', 'Professional']
@@ -110,18 +111,35 @@ export default function ChatPage() {
       setSyncState(`Add ${provider} API key in Settings`)
       return `I need a ${provider} API key before I can generate live AI text. Open Settings, choose ${provider}, paste the key, save it, then send this again.`
     }
+    const prompt = memoryOn
+      ? history.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n')
+      : userText
+
+    // 1️⃣ Try Python backend first
     try {
       const { data } = await pyApi.post('/completion', {
         system_prompt: systemPrompt,
-        prompt: memoryOn
-          ? history.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n')
-          : userText,
+        prompt,
         ...aiRequestConfig(settings),
       })
-      setSyncState('AI response from Python backend')
+      setSyncState('✓ AI via Python backend')
       return data.response
-    } catch (error) {
-      const detail = aiErrorMessage(error)
+    } catch (backendError) {
+      // 2️⃣ If backend is unreachable (CORS / Network Error), call AI provider directly from browser
+      if (isNetworkError(backendError)) {
+        setSyncState(`Backend unreachable — calling ${provider} directly…`)
+        try {
+          const reply = await callAIDirectly(systemPrompt, prompt, settings)
+          setSyncState(`✓ AI direct (${provider})`)
+          return reply
+        } catch (directError) {
+          const detail = directError?.response?.data?.error?.message || directError.message || 'Direct call failed'
+          setSyncState('AI request failed')
+          return `The AI request did not complete.\n\nProvider: ${provider}\nModel: ${providerModel(settings)}\nError: ${detail}\n\nCheck that your ${provider} API key in Settings is valid.`
+        }
+      }
+      // 3️⃣ Backend responded but returned an error (bad key, quota, etc.)
+      const detail = aiErrorMessage(backendError)
       setSyncState('AI request failed')
       return `The AI request did not complete.\n\nProvider: ${provider}\nModel: ${providerModel(settings)}\nError: ${detail}\n\nCheck that your Python backend is deployed/running and that the ${provider} API key in Settings is valid.`
     }
