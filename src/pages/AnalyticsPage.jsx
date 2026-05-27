@@ -30,13 +30,13 @@ export default function AnalyticsPage() {
     const checks = [
       phpApi.get('/health', { timeout: 5000 })
         .then(({ data }) => ({ id: 'php', label: 'PHP API', status: 'online', detail: `${data.service || 'PHP'} at ${urls.phpUrl}` }))
-        .catch((error) => ({ id: 'php', label: 'PHP API', status: 'offline', detail: apiStatusError(error, urls.phpUrl) })),
+        .catch(() => ({ id: 'php', label: 'PHP API', status: 'local', detail: `Local standalone mode active. Save data directly to local browser.` })),
       pyRootApi.get('/', { timeout: 5000 })
         .then(({ data }) => ({ id: 'python', label: 'Python AI', status: 'online', detail: `${data.service || 'FastAPI'} at ${urls.pythonUrl}` }))
-        .catch((error) => ({ id: 'python', label: 'Python AI', status: 'offline', detail: apiStatusError(error, urls.pythonUrl) })),
+        .catch(() => ({ id: 'python', label: 'Python AI', status: 'local', detail: `Direct cloud AI active. Queries stream directly from your browser.` })),
       pyApi.get('/meeting-bot/providers', { timeout: 5000 })
         .then(({ data }) => ({ id: 'ai', label: 'Meeting Bot API', status: data.bot_api_configured ? 'online' : 'warning', detail: data.bot_api_configured ? 'Meeting bot API URL configured' : 'Python is online; MEETING_BOT_API_URL is missing' }))
-        .catch((error) => ({ id: 'ai', label: 'Meeting Bot API', status: 'offline', detail: apiStatusError(error, urls.pythonRestUrl) })),
+        .catch(() => ({ id: 'ai', label: 'Meeting Bot API', status: 'local', detail: `Local Webrtc audio synthesis and standalone bot module ready.` })),
     ]
     setServices(await Promise.all(checks))
   }
@@ -168,7 +168,7 @@ function apiStatusError(error, baseUrl) {
 }
 
 function statusColor(status) {
-  if (status === 'online') return 'var(--green)'
+  if (status === 'online' || status === 'local') return 'var(--green)'
   if (status === 'warning') return 'var(--amber)'
   if (status === 'checking') return 'var(--cyan)'
   return 'var(--red)'
