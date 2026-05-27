@@ -115,7 +115,8 @@ body::before {
   inset: 82px 18px 112px;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   border: 1px solid color-mix(in srgb, var(--b1) 78%, transparent);
   border-radius: 30px;
   background: color-mix(in srgb, var(--bg1) 90%, transparent);
