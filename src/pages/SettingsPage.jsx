@@ -127,39 +127,44 @@ export default function SettingsPage() {
           </Row>
           <Row label="Model">
             <select value={settings.model} onChange={e => updateSettings({ model: e.target.value })} style={select}>
-              <optgroup label="── Gemini (Google) ──">
-                <option value="gemini-2.0-flash">Gemini 2.0 Flash ⚡ (Recommended)</option>
-                <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
-                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash Latest</option>
+              <optgroup label="── Gemini (Google) ── 🆕">
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash ⚡ (Recommended)</option>
+                <option value="gemini-3.5-flash">Gemini 3.5 Flash 🆕</option>
+                <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite</option>
+                <option value="gemini-2.0-flash">Gemini 2.0 Flash (expiring Jun 1)</option>
               </optgroup>
-              <optgroup label="── Anthropic (Claude) ──">
-                <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-                <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+              <optgroup label="── Anthropic (Claude) ── 🆕">
+                <option value="claude-sonnet-4-6">Claude Sonnet 4.6 ✅ (Recommended)</option>
+                <option value="claude-opus-4-7">Claude Opus 4.7 (Flagship)</option>
+                <option value="claude-haiku-4-5">Claude Haiku 4.5 (Fast)</option>
               </optgroup>
               <optgroup label="── OpenAI ──">
-                <option value="gpt-4o">GPT-4o</option>
-                <option value="gpt-4o-mini">GPT-4o Mini</option>
+                <option value="gpt-4o-mini">GPT-4o Mini ✅</option>
+                <option value="gpt-4o">GPT-4o (check availability)</option>
               </optgroup>
               <optgroup label="── DeepSeek ──">
-                <option value="deepseek-chat">DeepSeek Chat</option>
-                <option value="deepseek-reasoner">DeepSeek Reasoner</option>
+                <option value="deepseek-v4-flash">DeepSeek V4 Flash ✅</option>
+                <option value="deepseek-v4-pro">DeepSeek V4 Pro</option>
+                <option value="deepseek-chat">DeepSeek Chat (legacy, works till Jul 24)</option>
               </optgroup>
               <optgroup label="── Groq (Fast) ──">
-                <option value="llama-3.1-8b-instant">Llama 3.1 8B Instant</option>
-                <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
+                <option value="llama-3.3-70b-versatile">Llama 3.3 70B ✅ (Best quality)</option>
+                <option value="llama-3.1-8b-instant">Llama 3.1 8B (Fastest)</option>
               </optgroup>
               <optgroup label="── Mistral ──">
-                <option value="mistral-small-latest">Mistral Small</option>
-                <option value="mistral-large-latest">Mistral Large</option>
+                <option value="mistral-small-4">Mistral Small 4 ✅</option>
+                <option value="mistral-large-3-2512">Mistral Large 3</option>
+                <option value="devstral">Devstral (Coding)</option>
               </optgroup>
               <optgroup label="── xAI ──">
-                <option value="grok-2-latest">xAI Grok 2</option>
+                <option value="grok-4.3">Grok 4.3 ✅ (Current)</option>
+                <option value="grok-build-0.1">Grok Build 0.1 (Coding)</option>
               </optgroup>
               <optgroup label="── OpenRouter ──">
                 <option value="openai/gpt-4o-mini">OpenRouter GPT-4o Mini</option>
-                <option value="anthropic/claude-3.5-sonnet">OpenRouter Claude 3.5 Sonnet</option>
-                <option value="google/gemini-2.0-flash-exp">OpenRouter Gemini 2.0 Flash</option>
+                <option value="anthropic/claude-sonnet-4-6">OpenRouter Claude Sonnet 4.6</option>
+                <option value="google/gemini-2.5-flash">OpenRouter Gemini 2.5 Flash</option>
+                <option value="meta-llama/llama-3.3-70b-instruct">OpenRouter Llama 3.3 70B</option>
               </optgroup>
             </select>
           </Row>

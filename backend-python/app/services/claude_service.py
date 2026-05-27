@@ -19,7 +19,7 @@ class ClaudeService:
         prompt: str,
         model: str = None,
         api_key: str = None,
-        provider: str = "anthropic",
+        provider: str = "gemini",
         openai_key: str = None,
         gemini_key: str = None,
         openrouter_key: str = None,
@@ -28,7 +28,7 @@ class ClaudeService:
         mistral_key: str = None,
         xai_key: str = None,
     ) -> str:
-        provider = (provider or "anthropic").lower()
+        provider = (provider or "gemini").lower()
         if provider == "openai":
             return await self._openai_completion(system_prompt, prompt, self._model_for_provider(provider, model), openai_key)
         if provider == "gemini":
@@ -74,43 +74,44 @@ class ClaudeService:
                 prompt,
                 self._model_for_provider(provider, model),
             )
+        # Default: Anthropic
         return await self._anthropic_completion(system_prompt, prompt, self._model_for_provider("anthropic", model), api_key)
 
     def _model_for_provider(self, provider: str, model: str = None) -> str:
-        provider = (provider or "anthropic").lower()
+        provider = (provider or "gemini").lower()
         defaults = {
-            "anthropic": "claude-3-5-sonnet-20241022",
+            "anthropic": "claude-sonnet-4-6",
             "openai": "gpt-4o-mini",
-            "gemini": "gemini-2.0-flash",
+            "gemini": "gemini-2.5-flash",
             "openrouter": "openai/gpt-4o-mini",
-            "deepseek": "deepseek-chat",
-            "groq": "llama-3.1-8b-instant",
-            "mistral": "mistral-small-latest",
-            "xai": "grok-2-latest",
+            "deepseek": "deepseek-v4-flash",
+            "groq": "llama-3.3-70b-versatile",
+            "mistral": "mistral-small-4",
+            "xai": "grok-4.3",
         }
         if not model:
-            return defaults.get(provider, defaults["anthropic"])
+            return defaults.get(provider, defaults["gemini"])
         lower_model = model.lower()
         provider_prefixes = {
             "anthropic": ("claude",),
-            "openai": ("gpt", "o1", "o3", "o4"),
+            "openai": ("gpt", "o1", "o3", "o4", "chatgpt"),
             "gemini": ("gemini",),
-            "openrouter": ("openai/", "anthropic/", "google/", "meta-llama/", "mistralai/", "deepseek/", "x-ai/"),
+            "openrouter": ("openai/", "anthropic/", "google/", "meta-llama/", "mistralai/", "deepseek/", "x-ai/", "qwen/"),
             "deepseek": ("deepseek",),
             "groq": ("llama", "mixtral", "gemma", "qwen", "whisper", "distil"),
-            "mistral": ("mistral", "ministral", "codestral", "open-"),
+            "mistral": ("mistral", "ministral", "codestral", "open-", "devstral"),
             "xai": ("grok",),
         }
         prefixes = provider_prefixes.get(provider)
         if prefixes and not lower_model.startswith(prefixes):
-            return defaults.get(provider, defaults["anthropic"])
+            return defaults.get(provider, defaults["gemini"])
         return model
 
     async def _anthropic_completion(self, system_prompt: str, prompt: str, model: str = None, api_key: str = None) -> str:
         client = self._anthropic_client(api_key)
         response = await client.messages.create(
-            model=model or "claude-3-5-sonnet-20241022",
-            max_tokens=2000,
+            model=model or "claude-sonnet-4-6",
+            max_tokens=1500,
             system=system_prompt,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -140,7 +141,7 @@ class ClaudeService:
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         if extra_headers:
             headers.update(extra_headers)
-        async with httpx.AsyncClient(timeout=30) as client:
+        async with httpx.AsyncClient(timeout=60) as client:
             response = await client.post(
                 url,
                 headers=headers,
@@ -150,7 +151,7 @@ class ClaudeService:
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": prompt},
                     ],
-                    "max_tokens": 1200,
+                    "max_tokens": 1500,
                 },
             )
             response.raise_for_status()
@@ -161,14 +162,14 @@ class ClaudeService:
         key = api_key or os.getenv("GEMINI_API_KEY")
         if not key:
             raise ValueError("Gemini API key is missing.")
-        gemini_model = model or "gemini-2.0-flash"
-        async with httpx.AsyncClient(timeout=30) as client:
+        gemini_model = model or "gemini-2.5-flash"
+        async with httpx.AsyncClient(timeout=60) as client:
             response = await client.post(
                 f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent?key={key}",
                 json={
                     "systemInstruction": {"parts": [{"text": system_prompt}]},
                     "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-                    "generationConfig": {"maxOutputTokens": 1200},
+                    "generationConfig": {"maxOutputTokens": 1500},
                 },
             )
             response.raise_for_status()

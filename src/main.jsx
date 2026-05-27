@@ -23,15 +23,30 @@ import { Sentry } from './utils/sentry'
     const s = JSON.parse(raw)
     let changed = false
 
-    // gemini-1.5-flash was deprecated — upgrade to gemini-2.0-flash
-    if (s.model === 'gemini-1.5-flash') {
-      s.model = 'gemini-2.0-flash'
+    // Model upgrades — map old deprecated names to current 2026 models
+    const modelUpgrades = {
+      'gemini-1.5-flash': 'gemini-2.5-flash',
+      'gemini-1.5-flash-latest': 'gemini-2.5-flash',
+      'gemini-1.5-pro': 'gemini-2.5-flash',
+      'gemini-2.0-flash': 'gemini-2.5-flash',
+      'gemini-2.0-flash-lite': 'gemini-2.5-flash',
+      'grok-2-latest': 'grok-4.3',
+      'grok-3-latest': 'grok-4.3',
+      'deepseek-chat': 'deepseek-v4-flash',
+      'deepseek-reasoner': 'deepseek-v4-flash',
+      'mistral-small-latest': 'mistral-small-4',
+      'mistral-large-latest': 'mistral-large-3-2512',
+      'gpt-4o': 'gpt-4o-mini',
+    }
+    if (s.model && modelUpgrades[s.model]) {
+      s.model = modelUpgrades[s.model]
       changed = true
     }
+
     // If provider is anthropic but no Anthropic key set, switch to gemini
     if (s.activeProvider === 'anthropic' && !s.apiKey) {
       s.activeProvider = 'gemini'
-      if (!s.model || s.model.startsWith('claude')) s.model = 'gemini-2.0-flash'
+      if (!s.model || s.model.startsWith('claude')) s.model = 'gemini-2.5-flash'
       changed = true
     }
 

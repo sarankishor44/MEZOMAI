@@ -10,24 +10,24 @@ export const PROVIDER_KEY_FIELDS = {
 }
 
 export const PROVIDER_DEFAULT_MODELS = {
-  anthropic: 'claude-3-5-sonnet-20241022',
+  anthropic: 'claude-sonnet-4-6',
   openai: 'gpt-4o-mini',
-  gemini: 'gemini-2.0-flash',
+  gemini: 'gemini-2.5-flash',
   openrouter: 'openai/gpt-4o-mini',
-  deepseek: 'deepseek-chat',
-  groq: 'llama-3.1-8b-instant',
-  mistral: 'mistral-small-latest',
-  xai: 'grok-2-latest',
+  deepseek: 'deepseek-v4-flash',
+  groq: 'llama-3.3-70b-versatile',
+  mistral: 'mistral-small-4',
+  xai: 'grok-4.3',
 }
 
 const PROVIDER_MODEL_PREFIXES = {
   anthropic: ['claude'],
-  openai: ['gpt', 'o1', 'o3', 'o4'],
+  openai: ['gpt', 'o1', 'o3', 'o4', 'chatgpt'],
   gemini: ['gemini'],
-  openrouter: ['openai/', 'anthropic/', 'google/', 'meta-llama/', 'mistralai/', 'deepseek/', 'x-ai/'],
+  openrouter: ['openai/', 'anthropic/', 'google/', 'meta-llama/', 'mistralai/', 'deepseek/', 'x-ai/', 'qwen/'],
   deepseek: ['deepseek'],
   groq: ['llama', 'mixtral', 'gemma', 'qwen', 'whisper', 'distil'],
-  mistral: ['mistral', 'ministral', 'codestral', 'open-'],
+  mistral: ['mistral', 'ministral', 'codestral', 'open-', 'devstral'],
   xai: ['grok'],
 }
 
@@ -64,7 +64,6 @@ export const aiRequestConfig = (settings = {}) => ({
 })
 
 export const aiErrorMessage = (error) => {
-  // Try to extract the most human-readable error detail
   const data = error?.response?.data
   if (data) {
     if (typeof data.detail === 'string') return data.detail
