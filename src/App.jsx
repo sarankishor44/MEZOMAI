@@ -8,6 +8,7 @@ import MeetingsPage from './pages/MeetingsPage'
 import AnalyticsPage from './pages/AnalyticsPage'
 import SettingsPage from './pages/SettingsPage'
 import LoginPage from './pages/LoginPage'
+import PikaGuidePage from './pages/PikaGuidePage'
 import { phpApi } from './utils/api'
 
 export default function App() {
@@ -43,6 +44,7 @@ export default function App() {
         {page === 'chat'       && <ChatPage />}
         {page === 'code'       && <CodePage />}
         {page === 'meetings'   && <MeetingsPage />}
+        {page === 'pika-guide' && <PikaGuidePage />}
         {page === 'analytics'  && <AnalyticsPage />}
         {page === 'settings'   && <SettingsPage />}
       </main>

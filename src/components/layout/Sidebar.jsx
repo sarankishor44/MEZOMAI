@@ -6,6 +6,7 @@ const NAV = [
   { id: 'chat', label: 'Chat', icon: ChatIcon, color: ['#34d399', '#0f766e'] },
   { id: 'code', label: 'Code', icon: CodeIcon, color: ['#a78bfa', '#6d28d9'] },
   { id: 'meetings', label: 'Meet', icon: VideoIcon, color: ['#fb7185', '#be123c'] },
+  { id: 'pika-guide', label: 'Pika', icon: BookIcon, color: ['#f472b6', '#db2777'] },
   { id: 'analytics', label: 'Stats', icon: ChartIcon, color: ['#fbbf24', '#d97706'] },
   { id: 'settings', label: 'Settings', icon: GearIcon, color: ['#94a3b8', '#475569'] },
 ]
@@ -66,3 +67,4 @@ function GearIcon(){ return <Svg><circle cx="12" cy="12" r="3"/><path d="M19.4 1
 function MoonIcon(){ return <Svg><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/></Svg> }
 function SunIcon(){ return <Svg><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></Svg> }
 function PowerIcon(){ return <Svg><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/></Svg> }
+function BookIcon(){ return <Svg><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></Svg> }
