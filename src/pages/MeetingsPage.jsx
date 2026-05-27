@@ -359,19 +359,9 @@ export default function MeetingsPage() {
               <div style={tileLabel}>{muted ? 'Muted' : 'Microphone active'}</div>
             </div>
             <div style={tile}>
-              <AvatarFace size={150}/>
-              <div style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 800, marginTop: 10 }}>{settings.avatarName}</div>
+              <AvatarFace size={190}/>
+              <div style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 800, marginTop: 10 }}>{settings.avatarName}</div>
               <div style={aiBadge}>AI Agent</div>
-            </div>
-            <div style={tile}>
-              <div style={{...cameraOffBox, background: '#3b82f6'}}>JS</div>
-              <div style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 800, marginTop: 10 }}>John Smith</div>
-              <div style={tileLabel}>Participant</div>
-            </div>
-            <div style={tile}>
-              <div style={{...cameraOffBox, background: '#10b981'}}>EW</div>
-              <div style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 800, marginTop: 10 }}>Emma Woods</div>
-              <div style={tileLabel}>Participant</div>
             </div>
           </section>
 
@@ -493,7 +483,7 @@ const callHeader = { height: 78, display: 'flex', justifyContent: 'space-between
 const callTitle = { fontFamily: 'var(--ff-display)', color: '#fff', fontSize: 20, fontWeight: 800, marginTop: 4 }
 const timerBadge = { display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(22,163,74,.12)', border: '1px solid rgba(74,222,128,.35)', color: '#86efac', borderRadius: 999, padding: '8px 12px', fontFamily: 'var(--ff-mono)', fontWeight: 800 }
 const liveDot = { width: 8, height: 8, borderRadius: '50%', background: '#ef4444', boxShadow: '0 0 12px #ef4444' }
-const videoGrid = { flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 14, padding: 18 }
+const videoGrid = { flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, padding: 18 }
 const tile = { position: 'relative', background: 'linear-gradient(145deg,#111827,#020617)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 18, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 10, color: '#fff' }
 const video = { width: '100%', height: '100%', objectFit: 'cover' }
 const cameraOffBox = { width: 90, height: 90, borderRadius: '50%', background: 'rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1', fontSize: 24, fontWeight: 'bold' }
