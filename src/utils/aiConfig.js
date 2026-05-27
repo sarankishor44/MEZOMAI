@@ -24,14 +24,14 @@ const PROVIDER_MODEL_PREFIXES = {
   anthropic: ['claude'],
   openai: ['gpt', 'o1', 'o3', 'o4'],
   gemini: ['gemini'],
-  openrouter: ['openai/', 'anthropic/', 'google/', 'meta-llama/', 'mistralai/', 'deepseek/'],
+  openrouter: ['openai/', 'anthropic/', 'google/', 'meta-llama/', 'mistralai/', 'deepseek/', 'x-ai/'],
   deepseek: ['deepseek'],
-  groq: ['llama', 'mixtral', 'gemma', 'qwen'],
-  mistral: ['mistral', 'ministral', 'codestral'],
+  groq: ['llama', 'mixtral', 'gemma', 'qwen', 'whisper', 'distil'],
+  mistral: ['mistral', 'ministral', 'codestral', 'open-'],
   xai: ['grok'],
 }
 
-export const activeProvider = (settings = {}) => (settings.activeProvider || 'anthropic').toLowerCase()
+export const activeProvider = (settings = {}) => (settings.activeProvider || 'gemini').toLowerCase()
 
 export const providerKey = (settings = {}) => {
   const provider = activeProvider(settings)
@@ -43,7 +43,7 @@ export const providerModel = (settings = {}) => {
   const model = settings.model || ''
   const prefixes = PROVIDER_MODEL_PREFIXES[provider]
   if (!model || !prefixes?.some(prefix => model.toLowerCase().startsWith(prefix))) {
-    return PROVIDER_DEFAULT_MODELS[provider] || PROVIDER_DEFAULT_MODELS.anthropic
+    return PROVIDER_DEFAULT_MODELS[provider] || PROVIDER_DEFAULT_MODELS.gemini
   }
   return model
 }
@@ -63,9 +63,14 @@ export const aiRequestConfig = (settings = {}) => ({
   xai_key: settings.xAiKey || undefined,
 })
 
-export const aiErrorMessage = (error) => (
-  error?.response?.data?.detail ||
-  error?.response?.data?.error ||
-  error?.message ||
-  'AI request failed.'
-)
+export const aiErrorMessage = (error) => {
+  // Try to extract the most human-readable error detail
+  const data = error?.response?.data
+  if (data) {
+    if (typeof data.detail === 'string') return data.detail
+    if (typeof data.error === 'string') return data.error
+    if (data.error?.message) return data.error.message
+    if (typeof data.message === 'string') return data.message
+  }
+  return error?.message || 'AI request failed.'
+}

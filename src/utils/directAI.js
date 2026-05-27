@@ -4,21 +4,23 @@ import { activeProvider, providerKey, providerModel, PROVIDER_DEFAULT_MODELS } f
 
 // Returns true when the error is a network/CORS block (no response from server)
 export const isNetworkError = (error) =>
-  !error.response && (error.code === 'ERR_NETWORK' || error.message === 'Network Error')
+  !error.response && (error.code === 'ERR_NETWORK' || error.message === 'Network Error' || error.code === 'ERR_FAILED')
 
-// Direct Gemini call from the browser
+// ─── Gemini (Google Generative AI) ────────────────────────────────────────────
 const callGemini = async (systemPrompt, prompt, model, apiKey) => {
   const geminiModel = model || PROVIDER_DEFAULT_MODELS.gemini
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`
+  // Use v1 endpoint for stable models; v1beta for experimental
+  const apiVersion = geminiModel.includes('exp') || geminiModel.includes('preview') ? 'v1beta' : 'v1beta'
+  const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${geminiModel}:generateContent?key=${apiKey}`
   const { data } = await axios.post(url, {
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    generationConfig: { maxOutputTokens: 1200 },
+    generationConfig: { maxOutputTokens: 1500 },
   })
   return data.candidates[0].content.parts[0].text
 }
 
-// Direct OpenAI-compatible call from the browser
+// ─── OpenAI-compatible (OpenAI, DeepSeek, Groq, Mistral, xAI, OpenRouter) ────
 const callOpenAICompatible = async (baseUrl, apiKey, systemPrompt, prompt, model, extraHeaders = {}) => {
   const { data } = await axios.post(
     baseUrl,
@@ -28,18 +30,33 @@ const callOpenAICompatible = async (baseUrl, apiKey, systemPrompt, prompt, model
         { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt },
       ],
-      max_tokens: 1200,
+      max_tokens: 1500,
     },
     { headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', ...extraHeaders } }
   )
   return data.choices[0].message.content
 }
 
-// Main direct-call dispatcher — mirrors the Python backend's logic
+// ─── Anthropic (Claude) — SDK required, no direct browser CORS support ─────────
+const callAnthropic = async (systemPrompt, prompt, model, apiKey) => {
+  // Anthropic blocks browser requests with CORS — must use Python backend
+  // This path should not normally be reached (backend handles Anthropic)
+  throw new Error(
+    'Claude (Anthropic) cannot be called directly from the browser.\n' +
+    'Please switch to Gemini, DeepSeek, or Groq in Settings → Active Provider,\n' +
+    'or wait for the Python backend CORS fix to deploy on Vercel.'
+  )
+}
+
+// ─── Main dispatcher ──────────────────────────────────────────────────────────
 export const callAIDirectly = async (systemPrompt, prompt, settings) => {
   const provider = activeProvider(settings)
   const apiKey = providerKey(settings)
   const model = providerModel(settings)
+
+  if (!apiKey) {
+    throw new Error(`No API key found for ${provider}. Go to Settings → API Keys and add your ${provider} key.`)
+  }
 
   switch (provider) {
     case 'gemini':
@@ -53,7 +70,7 @@ export const callAIDirectly = async (systemPrompt, prompt, settings) => {
 
     case 'deepseek':
       return callOpenAICompatible(
-        'https://api.deepseek.com/chat/completions',
+        'https://api.deepseek.com/v1/chat/completions',  // v1 path preferred
         apiKey, systemPrompt, prompt, model
       )
 
@@ -79,15 +96,16 @@ export const callAIDirectly = async (systemPrompt, prompt, settings) => {
       return callOpenAICompatible(
         'https://openrouter.ai/api/v1/chat/completions',
         apiKey, systemPrompt, prompt, model,
-        { 'HTTP-Referer': 'https://mezomai.vercel.app', 'X-Title': 'MEZOMAI' }
+        {
+          'HTTP-Referer': 'https://mezomai.vercel.app',
+          'X-Title': 'MEZOMAI',
+        }
       )
 
-    case 'anthropic': {
-      // Anthropic doesn't have browser CORS support, give helpful message
-      throw new Error('Anthropic (Claude) requires the Python backend. Please use Gemini, DeepSeek, Groq, Mistral, or OpenAI while the backend CORS issue is being resolved.')
-    }
+    case 'anthropic':
+      return callAnthropic(systemPrompt, prompt, model, apiKey)
 
     default:
-      throw new Error(`Unknown provider: ${provider}`)
+      throw new Error(`Unknown AI provider: "${provider}". Check Settings → Active Provider.`)
   }
 }

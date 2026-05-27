@@ -44,7 +44,7 @@ class ClaudeService:
             )
         if provider == "deepseek":
             return await self._openai_compatible_completion(
-                "https://api.deepseek.com/chat/completions",
+                "https://api.deepseek.com/v1/chat/completions",
                 deepseek_key or os.getenv("DEEPSEEK_API_KEY"),
                 system_prompt,
                 prompt,
@@ -95,10 +95,10 @@ class ClaudeService:
             "anthropic": ("claude",),
             "openai": ("gpt", "o1", "o3", "o4"),
             "gemini": ("gemini",),
-            "openrouter": ("openai/", "anthropic/", "google/", "meta-llama/", "mistralai/", "deepseek/"),
+            "openrouter": ("openai/", "anthropic/", "google/", "meta-llama/", "mistralai/", "deepseek/", "x-ai/"),
             "deepseek": ("deepseek",),
-            "groq": ("llama", "mixtral", "gemma", "qwen"),
-            "mistral": ("mistral", "ministral", "codestral"),
+            "groq": ("llama", "mixtral", "gemma", "qwen", "whisper", "distil"),
+            "mistral": ("mistral", "ministral", "codestral", "open-"),
             "xai": ("grok",),
         }
         prefixes = provider_prefixes.get(provider)

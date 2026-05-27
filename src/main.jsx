@@ -4,13 +4,39 @@ import App from './App.jsx'
 import './index.css'
 import { Sentry } from './utils/sentry'
 
-// One-time migration: clear any stale/wrong Python API URL cached in localStorage
+// ── One-time localStorage migrations ──────────────────────────────────────────
+
+// 1. Clear stale wrong Python API URL
 ;(function clearStalePyUrl() {
   const staleUrls = ['https://mezomai-oao1.vercel.app', 'http://localhost:8000']
   const cached = localStorage.getItem('aria_py_api_url')
   if (cached && staleUrls.includes(cached.trim())) {
     localStorage.removeItem('aria_py_api_url')
   }
+})()
+
+// 2. Upgrade stale settings: fix deprecated model names + set better defaults
+;(function migrateSettings() {
+  try {
+    const raw = localStorage.getItem('aria_settings')
+    if (!raw) return
+    const s = JSON.parse(raw)
+    let changed = false
+
+    // gemini-1.5-flash was deprecated — upgrade to gemini-2.0-flash
+    if (s.model === 'gemini-1.5-flash') {
+      s.model = 'gemini-2.0-flash'
+      changed = true
+    }
+    // If provider is anthropic but no Anthropic key set, switch to gemini
+    if (s.activeProvider === 'anthropic' && !s.apiKey) {
+      s.activeProvider = 'gemini'
+      if (!s.model || s.model.startsWith('claude')) s.model = 'gemini-2.0-flash'
+      changed = true
+    }
+
+    if (changed) localStorage.setItem('aria_settings', JSON.stringify(s))
+  } catch (_) { /* ignore parse errors */ }
 })()
 
 
