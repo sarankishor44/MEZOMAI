@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useStore } from '../store'
 
 const STYLE_COLORS = {
   cyan: '#22d3ee',
@@ -49,7 +50,7 @@ export default function AgentSetupPage() {
     }))
   }
 
-  const { updateSettings, setPage } = require('../store').useStore()
+  const { updateSettings, setPage } = useStore()
 
   const handleGenerate = async () => {
     if (agentData.image) {
