@@ -4,6 +4,16 @@ import App from './App.jsx'
 import './index.css'
 import { Sentry } from './utils/sentry'
 
+// One-time migration: clear any stale/wrong Python API URL cached in localStorage
+;(function clearStalePyUrl() {
+  const staleUrls = ['https://mezomai-oao1.vercel.app', 'http://localhost:8000']
+  const cached = localStorage.getItem('aria_py_api_url')
+  if (cached && staleUrls.includes(cached.trim())) {
+    localStorage.removeItem('aria_py_api_url')
+  }
+})()
+
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <Sentry.ErrorBoundary fallback={<FatalError />}>
