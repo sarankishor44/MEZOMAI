@@ -252,12 +252,16 @@ const avatarCss = `
   height: 64%;
   border-radius: 49% 49% 47% 47% / 42% 42% 58% 58%;
   background:
+    radial-gradient(circle at 28% 46%, rgba(120,67,48,.16) 0 .9%, transparent 1.2%),
+    radial-gradient(circle at 72% 47%, rgba(120,67,48,.13) 0 .8%, transparent 1.1%),
+    radial-gradient(circle at 39% 60%, rgba(152,84,58,.12) 0 .7%, transparent 1%),
+    radial-gradient(circle at 61% 61%, rgba(152,84,58,.12) 0 .7%, transparent 1%),
     radial-gradient(circle at 36% 31%, rgba(255,255,255,.46), transparent 12%),
     radial-gradient(circle at 64% 34%, rgba(255,255,255,.28), transparent 12%),
     radial-gradient(circle at 50% 68%, rgba(255,255,255,.2), transparent 30%),
     radial-gradient(circle at 31% 56%, rgba(255,134,154,.24), transparent 15%),
     radial-gradient(circle at 69% 56%, rgba(255,134,154,.24), transparent 15%),
-    linear-gradient(115deg, #efad89, #ffd4bd 43%, #d98b72 100%);
+    linear-gradient(115deg, #dc9274, #ffd2ba 41%, #bd6f59 100%);
   box-shadow:
     inset -10px -10px 15px rgba(138, 73, 54, .17),
     inset 10px 4px 16px rgba(255,255,255,.32),
@@ -483,7 +487,9 @@ const avatarCss = `
   height: 14%;
   border-radius: 54% 44% 50% 50%;
   background: linear-gradient(120deg, rgba(255,255,255,.12), rgba(165,85,63,.24));
-  box-shadow: 2px 2px 0 rgba(151,75,56,.18);
+  box-shadow:
+    2px 2px 0 rgba(151,75,56,.18),
+    -1px 0 0 rgba(255,255,255,.2);
 }
 .mez-avatar-nose::after {
   content: "";
@@ -517,13 +523,26 @@ const avatarCss = `
   width: 42%;
   height: var(--mouth-open);
   min-height: 3px;
-  border: 2px solid #9f1239;
+  border: 2px solid #be3454;
   border-top: 0;
   border-radius: 0 0 var(--mouth-radius) var(--mouth-radius);
-  background: linear-gradient(180deg, #5f1324, #2f0711);
+  background:
+    radial-gradient(circle at 50% 110%, rgba(244,114,182,.62), transparent 38%),
+    linear-gradient(180deg, #7b1830, #2f0711);
   overflow: hidden;
   box-shadow: 0 2px 3px rgba(101, 39, 45, .18);
   transition: height .1s ease, border-radius .1s ease;
+}
+.mez-avatar-mouth::before {
+  content: "";
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  top: -3px;
+  height: 5px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #a92142, #e86f86 45%, #9f1239);
+  box-shadow: 0 1px 2px rgba(75, 22, 32, .22);
 }
 .mez-avatar-female .mez-avatar-mouth {
   top: 72%;

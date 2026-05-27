@@ -57,13 +57,13 @@ import { Sentry } from './utils/sentry'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <Sentry.ErrorBoundary fallback={<FatalError />}>
+    <Sentry.ErrorBoundary fallback={({ error, resetError }) => <FatalError error={error} resetError={resetError} />}>
       <App />
     </Sentry.ErrorBoundary>
   </React.StrictMode>
 )
 
-function FatalError() {
+function FatalError({ error, resetError }) {
   return (
     <div style={{
       minHeight: '100vh',
@@ -84,8 +84,25 @@ function FatalError() {
       }}>
         <h1 style={{ fontSize: 22, marginBottom: 8 }}>MEZOMAI hit an error</h1>
         <p style={{ color: 'var(--t3, #94a3b8)', lineHeight: 1.6 }}>
-          The issue was captured for review. Refresh the page to try again.
+          {error?.message || 'The issue was captured for review. Refresh the page to try again.'}
         </p>
+        <button
+          onClick={() => {
+            resetError?.()
+            window.location.href = '/'
+          }}
+          style={{
+            marginTop: 16,
+            border: 0,
+            borderRadius: 999,
+            padding: '10px 16px',
+            fontWeight: 800,
+            background: 'var(--gold, #d97706)',
+            color: '#fff',
+          }}
+        >
+          Back to workspace
+        </button>
       </div>
     </div>
   )

@@ -1,120 +1,90 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
 
-const SKILLS = [
-  { icon: 'CH', title: 'Natural Chat', desc: 'Context-aware conversations with memory', active: true },
-  { icon: 'VA', title: 'Vision Analytics', desc: 'Analyze images and document payloads', active: true },
-  { icon: 'IDE', title: 'Code IDE Sandbox', desc: 'Write, debug, execute and explain code blocks', active: true },
-  { icon: 'MT', title: 'Meeting Integration', desc: 'Join WebRTC rooms as an active AI participant', active: true },
-  { icon: 'VO', title: 'Neural Synthesis', desc: 'Convert text streams to lifelike voice', active: true },
-  { icon: 'AN', title: 'Analytics Engine', desc: 'Monitor telemetry, token counters and costs', active: true },
-]
-
-const ACTIVITY = [
-  { icon: 'CH', text: <><strong>Chat session</strong> - 24 messages, 3.2k tokens consumed</>, time: '2m ago' },
-  { icon: 'MT', text: <><strong>Meeting completed</strong> - 18 min, action summary generated</>, time: '1h ago' },
-  { icon: 'PY', text: <><strong>Code run</strong> - Python subprocess, 0.3s, exit code 0</>, time: '3h ago' },
-  { icon: 'SET', text: <><strong>Settings updated</strong> - Model migrated to Sonnet 3.5</>, time: 'Yesterday' },
+const LOGS = [
+  { text: 'Auth session verified. User: Operator', time: 'Just now', type: 'info' },
+  { text: 'Connected to Laravel PHP Cluster.', time: '1m ago', type: 'success' },
+  { text: 'AI neural engine initialized.', time: '3m ago', type: 'success' },
 ]
 
 export default function DashboardPage() {
   const { setPage, avatarState, settings, user } = useStore()
-  const [joinUrl, setJoinUrl] = useState('')
-
-  const handleQuickJoin = () => {
-    if (!joinUrl.trim()) return
-    useStore.getState().saveRecentMeeting({
-      id: 'meet_' + Date.now(),
-      date: new Date().toLocaleDateString(),
-      duration: '00:00',
-      platform: joinUrl.includes('meet.google.com') ? 'Google Meet' : joinUrl.includes('zoom.us') ? 'Zoom' : 'Teams',
-      link: joinUrl,
-    })
-    setPage('meetings')
-  }
 
   return (
-    <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }} className="fade-in">
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid var(--b1)' }}>
-        <div style={{ padding: '22px 30px 18px', borderBottom: '1px solid var(--b1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, background: 'var(--bg1)' }}>
-          <div>
-            <div style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--t3)', letterSpacing: '.12em', textTransform: 'uppercase' }}>Operator Console</div>
-            <div style={{ fontFamily: 'var(--ff-display)', fontSize: 25, fontWeight: 800, marginTop: 3 }}>
-              Welcome back, {user?.username || 'Operator'}
+    <div style={container} className="fade-in">
+      {/* HUD HEADER */}
+      <header style={header}>
+        <div>
+          <div style={eyebrow}>Mezomai Operational Command</div>
+          <h1 style={title}>Welcome back, {user?.username || 'Operator'}</h1>
+        </div>
+        <StatusBadge state={avatarState}/>
+      </header>
+
+      {/* COMMAND CORE */}
+      <div style={grid}>
+        {/* LEFT COLUMN: ACTIVE NODES & QUICK RUNNERS */}
+        <div style={leftCol}>
+          <div style={introCard}>
+            <div style={cyberGridPattern} />
+            <h2 style={cardTitle}>Cognitive AI Core Workspace</h2>
+            <p style={cardText}>
+              A unified cybernetic command console. Open secure modules to chat with {settings.avatarName || 'ARIA'}, code inside sandbox environments, or coordinate meetings.
+            </p>
+            <div style={actionRow}>
+              <button onClick={() => setPage('chat')} className="gold-glow-btn" style={actionBtn}>
+                Launch Chat Portal
+              </button>
+              <button onClick={() => setPage('code')} style={secondaryBtn}>
+                Open Codex IDE
+              </button>
             </div>
           </div>
-          <StatusBadge state={avatarState}/>
-        </div>
 
-        <div style={{ margin: '18px 30px', flexShrink: 0 }}>
-          <QuickJoinBar value={joinUrl} onChange={setJoinUrl} onJoin={handleQuickJoin}/>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, padding: '0 30px 18px', flexShrink: 0 }}>
-          <StatCard icon="CH" value="248" label="Messages Sent"/>
-          <StatCard icon="MT" value="12" label="Meetings Managed"/>
-          <StatCard icon="TK" value="84.2k" label="Tokens Tracked"/>
-          <StatCard icon="$" value="$1.24" label="Est. Cost"/>
-        </div>
-
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 30px 22px' }}>
-          <div style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--t3)', letterSpacing: '.12em', textTransform: 'uppercase', marginBottom: 14 }}>System Capabilities</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
-            {SKILLS.map((sk) => <SkillCard key={sk.title} {...sk}/>)}
-          </div>
-        </div>
-
-        <div style={{ padding: '16px 30px', borderTop: '1px solid var(--b1)', display: 'flex', gap: 12, flexShrink: 0, backgroundColor: 'var(--bg1)' }}>
-          <button onClick={() => setPage('chat')} className="gold-glow-btn" style={btnPrimary}>
-            Start Live Chat
-          </button>
-          <button onClick={() => setPage('meetings')} style={btnSecondary}>
-            Join WebRTC Room
-          </button>
-        </div>
-      </div>
-
-      <div style={{ width: 310, background: 'var(--bg1)', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-        <div style={{ padding: '30px 22px', borderBottom: '1px solid var(--b1)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-          <AvatarFace size={120}/>
-          <div style={{ fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 800 }}>{settings.avatarName}</div>
-          <div style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--gold)', letterSpacing: '.12em', textTransform: 'uppercase', background: 'var(--gold-light)', padding: '5px 10px', borderRadius: 999 }}>
-            {avatarState}
-          </div>
-          <div style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--t3)' }}>
-            {settings.model.split('-').slice(0, 3).join('-')}
-          </div>
-        </div>
-
-        <div style={{ padding: '18px 22px' }}>
-          <div style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--t3)', letterSpacing: '.12em', textTransform: 'uppercase', marginBottom: 12 }}>System Log Feed</div>
-          {ACTIVITY.map((a, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 0', borderBottom: i < ACTIVITY.length - 1 ? '1px solid var(--b1)' : 'none' }}>
-              <div style={miniBadge}>{a.icon}</div>
-              <div style={{ flex: 1, fontSize: 12, color: 'var(--t2)', lineHeight: 1.5 }}>{a.text}</div>
-              <div style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--t3)', whiteSpace: 'nowrap' }}>{a.time}</div>
+          <div style={subGrid}>
+            <div style={miniCard} onClick={() => setPage('meetings')}>
+              <div style={miniBadge}>MT</div>
+              <div>
+                <div style={miniTitle}>Meet Rooms</div>
+                <div style={miniDesc}>Join live WebRTC bot session</div>
+              </div>
             </div>
-          ))}
+
+            <div style={miniCard} onClick={() => setPage('analytics')}>
+              <div style={miniBadge}>ST</div>
+              <div>
+                <div style={miniTitle}>Analytics Feed</div>
+                <div style={miniDesc}>View system cost & token logs</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: CORE STATUS & TELEMETRY */}
+        <div style={rightCol}>
+          <div style={avatarSection}>
+            <div style={avatarBackgroundRing} />
+            <AvatarFace size={150}/>
+            <h2 style={avatarName}>{settings.avatarName || 'ARIA'}</h2>
+            <span style={avatarSubtitle}>{settings.model.split('-').slice(0, 3).join(' ')}</span>
+            <div style={avatarStatePill(avatarState)}>{avatarState}</div>
+          </div>
+
+          <div style={telemetrySection}>
+            <div style={telemetryTitle}>System Console Logs</div>
+            <div style={logList}>
+              {LOGS.map((log, i) => (
+                <div key={i} style={logLine}>
+                  <span style={logDot(log.type)}/>
+                  <div style={{ flex: 1 }}>{log.text}</div>
+                  <span style={logTime}>{log.time}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  )
-}
-
-function QuickJoinBar({ value, onChange, onJoin }) {
-  return (
-    <div style={{ background: 'var(--bg1)', border: '1px solid var(--b1)', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 12px 30px rgba(15,23,42,.06)' }}>
-      <span style={miniBadge}>MT</span>
-      <input
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder="Paste a Google Meet, Zoom or Teams link..."
-        style={{ flex: 1, background: 'none', border: 'none', boxShadow: 'none', fontFamily: 'var(--ff-mono)', fontSize: 12, color: 'var(--t1)' }}
-      />
-      <button onClick={onJoin} className="gold-glow-btn" style={{ border: 'none', padding: '8px 16px', fontFamily: 'var(--ff-display)', fontSize: 12, fontWeight: 700 }}>
-        Join Bot
-      </button>
     </div>
   )
 }
@@ -122,43 +92,166 @@ function QuickJoinBar({ value, onChange, onJoin }) {
 function StatusBadge({ state }) {
   const colors = { idle: 'var(--t3)', listening: 'var(--cyan)', thinking: 'var(--purple)', talking: 'var(--gold)' }
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 999, padding: '7px 14px' }}>
-      <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors[state] || colors.idle }}/>
-      <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--t2)', letterSpacing: '.08em', textTransform: 'uppercase' }}>{state}</span>
+    <div style={statusBadge}>
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors[state] || colors.idle, boxShadow: `0 0 8px ${colors[state]}` }}/>
+      <span style={statusText}>{state}</span>
     </div>
   )
 }
 
-function StatCard({ icon, value, label }) {
-  return (
-    <div style={{ background: 'var(--bg1)', border: '1px solid var(--b1)', borderRadius: 12, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 10px 24px rgba(15,23,42,.05)' }}>
-      <div style={miniBadge}>{icon}</div>
-      <div>
-        <div style={{ fontFamily: 'var(--ff-display)', fontSize: 21, fontWeight: 800, lineHeight: 1 }}>{value}</div>
-        <div style={{ fontSize: 11, color: 'var(--t3)', marginTop: 4, fontFamily: 'var(--ff-mono)', textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</div>
-      </div>
-    </div>
-  )
+// REDESIGNED HUD STYLING
+const container = {
+  flex: 1,
+  padding: 30,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 22,
+  overflowY: 'auto',
+  background: 'var(--bg)',
 }
 
-function SkillCard({ icon, title, desc, active }) {
-  return (
-    <div style={{ background: 'var(--bg1)', border: '1px solid var(--b1)', borderRadius: 12, padding: 16, minHeight: 116, boxShadow: '0 10px 24px rgba(15,23,42,.05)' }} className="glow-card-hover">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <div style={miniBadge}>{icon}</div>
-        <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 8, letterSpacing: '.08em', textTransform: 'uppercase', padding: '4px 7px', borderRadius: 6, background: active ? 'var(--gold-light)' : 'var(--bg3)', color: active ? 'var(--gold)' : 'var(--t3)' }}>
-          {active ? 'enabled' : 'disabled'}
-        </span>
-      </div>
-      <div style={{ fontFamily: 'var(--ff-display)', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>{title}</div>
-      <div style={{ fontSize: 12, color: 'var(--t3)', lineHeight: 1.45 }}>{desc}</div>
-    </div>
-  )
+const header = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  borderBottom: '1px solid var(--b1)',
+  paddingBottom: 16,
+}
+
+const eyebrow = {
+  fontFamily: 'var(--ff-mono)',
+  fontSize: 10,
+  color: 'var(--gold)',
+  letterSpacing: '.14em',
+  textTransform: 'uppercase',
+  fontWeight: 950,
+}
+
+const title = {
+  fontFamily: 'var(--ff-display)',
+  fontSize: 24,
+  fontWeight: 800,
+  marginTop: 4,
+}
+
+const statusBadge = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  background: 'var(--bg1)',
+  border: '1px solid var(--b1)',
+  borderRadius: 999,
+  padding: '6px 14px',
+}
+
+const statusText = {
+  fontFamily: 'var(--ff-mono)',
+  fontSize: 10,
+  color: 'var(--t2)',
+  letterSpacing: '.06em',
+  textTransform: 'uppercase',
+}
+
+const grid = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1.25fr) minmax(310px, 0.75fr)',
+  gap: 22,
+  flex: 1,
+  alignItems: 'start',
+}
+
+const leftCol = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 16,
+}
+
+const introCard = {
+  background: 'linear-gradient(135deg, var(--bg1) 60%, rgba(248, 201, 107, 0.05))',
+  border: '1px solid var(--b1)',
+  borderRadius: 18,
+  padding: 28,
+  position: 'relative',
+  overflow: 'hidden',
+  boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+}
+
+const cyberGridPattern = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '100%',
+  backgroundImage: 'radial-gradient(var(--b1) 1px, transparent 0)',
+  backgroundSize: '16px 16px',
+  opacity: 0.15,
+  pointerEvents: 'none',
+}
+
+const cardTitle = {
+  fontFamily: 'var(--ff-display)',
+  fontSize: 19,
+  fontWeight: 800,
+  marginBottom: 10,
+}
+
+const cardText = {
+  fontSize: 13,
+  color: 'var(--t3)',
+  lineHeight: 1.6,
+  marginBottom: 22,
+  maxWidth: 480,
+}
+
+const actionRow = {
+  display: 'flex',
+  gap: 12,
+}
+
+const actionBtn = {
+  border: 'none',
+  padding: '12px 24px',
+  borderRadius: 999,
+  fontFamily: 'var(--ff-display)',
+  fontSize: 12,
+  fontWeight: 900,
+  cursor: 'pointer',
+}
+
+const secondaryBtn = {
+  background: 'var(--bg2)',
+  border: '1px solid var(--b1)',
+  color: 'var(--t2)',
+  padding: '12px 24px',
+  borderRadius: 999,
+  fontFamily: 'var(--ff-display)',
+  fontSize: 12,
+  fontWeight: 800,
+  cursor: 'pointer',
+}
+
+const subGrid = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, 1fr)',
+  gap: 14,
+}
+
+const miniCard = {
+  background: 'var(--bg1)',
+  border: '1px solid var(--b1)',
+  borderRadius: 14,
+  padding: 16,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  cursor: 'pointer',
+  transition: 'transform 0.2s, border-color 0.2s',
+  boxShadow: '0 4px 15px rgba(0,0,0,0.02)',
 }
 
 const miniBadge = {
-  width: 34,
-  height: 34,
+  width: 32,
+  height: 32,
   borderRadius: 8,
   background: 'var(--gold-light)',
   border: '1px solid var(--b1)',
@@ -168,9 +261,123 @@ const miniBadge = {
   justifyContent: 'center',
   fontFamily: 'var(--ff-mono)',
   fontSize: 10,
-  fontWeight: 800,
-  flexShrink: 0,
+  fontWeight: 900,
 }
 
-const btnPrimary = { flex: 1, border: 'none', padding: '12px 20px', fontFamily: 'var(--ff-display)', fontSize: 13, fontWeight: 800, cursor: 'pointer' }
-const btnSecondary = { flex: 1, background: 'var(--bg2)', color: 'var(--t1)', border: '1px solid var(--b1)', padding: '12px 20px', fontFamily: 'var(--ff-display)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }
+const miniTitle = {
+  fontSize: 13,
+  fontWeight: 700,
+}
+
+const miniDesc = {
+  fontSize: 10,
+  color: 'var(--t3)',
+  marginTop: 2,
+}
+
+const rightCol = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 16,
+}
+
+const avatarSection = {
+  background: 'var(--bg1)',
+  border: '1px solid var(--b1)',
+  borderRadius: 18,
+  padding: '30px 20px',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  position: 'relative',
+}
+
+const avatarBackgroundRing = {
+  position: 'absolute',
+  width: 170,
+  height: 170,
+  borderRadius: '50%',
+  border: '1px dashed var(--b1)',
+  top: '20px',
+  animation: 'spin 20s linear infinite',
+  pointerEvents: 'none',
+  opacity: 0.4,
+}
+
+const avatarName = {
+  fontFamily: 'var(--ff-display)',
+  fontSize: 18,
+  fontWeight: 800,
+  marginTop: 14,
+}
+
+const avatarSubtitle = {
+  fontFamily: 'var(--ff-mono)',
+  fontSize: 9,
+  color: 'var(--t3)',
+  letterSpacing: '.04em',
+  textTransform: 'uppercase',
+  marginTop: 4,
+}
+
+const avatarStatePill = (state) => {
+  const colors = { idle: 'var(--t3)', listening: 'var(--cyan)', thinking: 'var(--purple)', talking: 'var(--gold)' }
+  const bg = { idle: 'var(--bg3)', listening: 'rgba(34,211,238,.1)', thinking: 'rgba(167,139,250,.1)', talking: 'rgba(248,201,107,.1)' }
+  return {
+    fontFamily: 'var(--ff-mono)',
+    fontSize: 9,
+    letterSpacing: '.08em',
+    textTransform: 'uppercase',
+    padding: '4px 10px',
+    borderRadius: 999,
+    background: bg[state] || bg.idle,
+    color: colors[state] || colors.idle,
+    marginTop: 12,
+    fontWeight: 800,
+  }
+}
+
+const telemetrySection = {
+  background: 'var(--bg1)',
+  border: '1px solid var(--b1)',
+  borderRadius: 18,
+  padding: 18,
+}
+
+const telemetryTitle = {
+  fontFamily: 'var(--ff-mono)',
+  fontSize: 9,
+  color: 'var(--t3)',
+  letterSpacing: '.1em',
+  textTransform: 'uppercase',
+  marginBottom: 12,
+  fontWeight: 800,
+}
+
+const logList = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 10,
+}
+
+const logLine = {
+  display: 'flex',
+  alignItems: 'center',
+  fontSize: 12,
+  color: 'var(--t2)',
+  gap: 8,
+}
+
+const logDot = (type) => ({
+  width: 5,
+  height: 5,
+  borderRadius: '50%',
+  background: type === 'success' ? 'var(--green)' : 'var(--cyan)',
+  boxShadow: `0 0 6px ${type === 'success' ? 'var(--green)' : 'var(--cyan)'}`,
+})
+
+const logTime = {
+  fontFamily: 'var(--ff-mono)',
+  fontSize: 9,
+  color: 'var(--t3)',
+}

@@ -3,7 +3,7 @@ import { useStore } from '../store'
 import { phpApi } from '../utils/api'
 
 export default function LoginPage() {
-  const { setToken, setUser, updateSettings, theme, toggleTheme } = useStore()
+  const { setToken, setUser, updateSettings, theme, toggleTheme, setPage } = useStore()
   const [mode, setMode] = useState('login')
   const [showAuth, setShowAuth] = useState(false)
   const [form, setForm] = useState({ username: '', email: '', password: '' })
@@ -139,6 +139,9 @@ export default function LoginPage() {
           <button onClick={toggleTheme} style={themeButton}>
             {theme === 'light' ? 'Dark' : 'Light'}
           </button>
+          <button onClick={() => setPage('setup')} style={setupBtnStyle}>
+            Workspace Setup
+          </button>
           {['login', 'register'].map((m) => (
             <button key={m} onClick={() => { setMode(m); setShowAuth(true) }} style={topAuthBtn(mode === m && showAuth)}>
               {m === 'login' ? 'Login' : 'Sign Up'}
@@ -151,6 +154,7 @@ export default function LoginPage() {
         <section style={welcomeHero(compact)}>
           <div style={phoneMock(compact)}>
             <div style={phoneIsland} />
+            <div style={phoneTime}>9:41</div>
             <div style={phoneTime}>9:41</div>
             <div style={phoneApps}>
               {[
@@ -273,7 +277,7 @@ const welcomeTopbar = {
 
 const brandButton = { border: 0, background: 'transparent', display: 'flex', alignItems: 'center', gap: 10, color: 'var(--t1)', padding: 2 }
 const topActions = { display: 'flex', alignItems: 'center', gap: 8 }
-const topAuthBtn = (active) => ({ border: 0, background: active ? 'var(--t1)' : 'color-mix(in srgb, var(--bg2) 84%, transparent)', color: active ? 'var(--bg1)' : 'var(--t2)', padding: '9px 14px', borderRadius: 999, fontWeight: 800, fontSize: 12 })
+const topAuthBtn = (active) => ({ border: 0, background: active ? 'var(--t1)' : 'color-mix(in srgb, var(--bg2) 84%, transparent)', color: active ? 'var(--bg1)' : 'var(--t2)', padding: '9px 14px', borderRadius: 999, fontWeight: 800, fontSize: 12, cursor: 'pointer' })
 
 const welcomeGrid = (compact) => ({
   minHeight: 'calc(100vh - 94px)',
@@ -325,8 +329,8 @@ const eyebrow = { fontFamily: 'var(--ff-mono)', color: 'var(--gold)', fontSize: 
 const headline = { fontFamily: 'var(--ff-display)', fontSize: 'clamp(38px, 6vw, 78px)', lineHeight: .96, letterSpacing: 0, marginTop: 12 }
 const subcopy = { color: 'var(--t2)', fontSize: 16, lineHeight: 1.7, marginTop: 20, maxWidth: 570 }
 const ctaRow = { display: 'flex', gap: 12, marginTop: 28, flexWrap: 'wrap' }
-const primaryCta = { border: 0, padding: '13px 20px', borderRadius: 999, fontWeight: 900 }
-const secondaryCta = { border: '1px solid var(--b1)', background: 'color-mix(in srgb, var(--bg1) 72%, transparent)', color: 'var(--t1)', padding: '13px 20px', borderRadius: 999, fontWeight: 900 }
+const primaryCta = { border: 0, padding: '13px 20px', borderRadius: 999, fontWeight: 900, cursor: 'pointer' }
+const secondaryCta = { border: '1px solid var(--b1)', background: 'color-mix(in srgb, var(--bg1) 72%, transparent)', color: 'var(--t1)', padding: '13px 20px', borderRadius: 999, fontWeight: 900, cursor: 'pointer' }
 
 const authPanel = (show, compact) => ({
   alignSelf: 'center',
@@ -341,14 +345,15 @@ const authPanel = (show, compact) => ({
   opacity: show ? 1 : .96,
 })
 
-const themeButton = { border: 0, background: 'color-mix(in srgb, var(--bg2) 84%, transparent)', padding: '9px 14px', color: 'var(--t2)', borderRadius: 999, fontSize: 12, fontWeight: 800 }
+const themeButton = { border: 0, background: 'color-mix(in srgb, var(--bg2) 84%, transparent)', padding: '9px 14px', color: 'var(--t2)', borderRadius: 999, fontSize: 12, fontWeight: 800, cursor: 'pointer' }
+const setupBtnStyle = { border: '1px solid var(--gold)', background: 'rgba(248, 201, 107, 0.1)', padding: '9px 14px', color: 'var(--gold)', borderRadius: 999, fontSize: 12, fontWeight: 800, cursor: 'pointer' }
 const logoBox = { width: 40, height: 40, background: 'linear-gradient(135deg, var(--gold), #0f766e)', borderRadius: 14, display: 'grid', placeItems: 'center', color: '#fff', boxShadow: '0 16px 30px var(--gold-glow)', fontFamily: 'var(--ff-display)', fontWeight: 900 }
 const brandName = { fontFamily: 'var(--ff-display)', fontSize: 16, fontWeight: 900, letterSpacing: '.04em' }
 const brandSub = { fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--t3)', letterSpacing: '.08em' }
 const tabWrap = { display: 'flex', gap: 4, marginBottom: 22, background: 'color-mix(in srgb, var(--bg3) 76%, transparent)', borderRadius: 999, padding: 4 }
-const tabStyle = (active) => ({ flex: 1, padding: '10px 0', border: 'none', borderRadius: 999, background: active ? 'var(--bg1)' : 'transparent', color: active ? 'var(--t1)' : 'var(--t3)', fontFamily: 'var(--ff-display)', fontSize: 13, fontWeight: 800, boxShadow: active ? '0 4px 12px rgba(15,23,42,.08)' : 'none' })
-const inputStyle = { width: '100%', fontSize: 13, borderRadius: 14, padding: '12px 14px' }
+const tabStyle = (active) => ({ flex: 1, padding: '10px 0', border: 'none', borderRadius: 999, background: active ? 'var(--bg1)' : 'transparent', color: active ? 'var(--t1)' : 'var(--t3)', fontFamily: 'var(--ff-display)', fontSize: 13, fontWeight: 800, boxShadow: active ? '0 4px 12px rgba(15,23,42,.08)' : 'none', cursor: 'pointer' })
+const inputStyle = { width: '100%', fontSize: 13, borderRadius: 14, padding: '12px 14px', background: 'var(--bg2)', border: '1px solid var(--b1)', color: 'var(--t1)', outline: 'none' }
 const noticeStyle = { marginTop: 12, fontSize: 11, color: 'var(--t2)', fontFamily: 'var(--ff-mono)' }
-const submitBtn = { width: '100%', marginTop: 20, padding: '13px 0', border: 'none', borderRadius: 999, fontFamily: 'var(--ff-display)', fontSize: 14, fontWeight: 900, opacity: 1 }
-const resendBtn = { width: '100%', marginTop: 10, border: '1px solid var(--b1)', background: 'color-mix(in srgb, var(--bg2) 84%, transparent)', color: 'var(--t2)', padding: '11px 0', borderRadius: 999, fontFamily: 'var(--ff-display)', fontSize: 12, fontWeight: 800 }
+const submitBtn = { width: '100%', marginTop: 20, padding: '13px 0', border: 'none', borderRadius: 999, fontFamily: 'var(--ff-display)', fontSize: 14, fontWeight: 900, opacity: 1, cursor: 'pointer' }
+const resendBtn = { width: '100%', marginTop: 10, border: '1px solid var(--b1)', background: 'color-mix(in srgb, var(--bg2) 84%, transparent)', color: 'var(--t2)', padding: '11px 0', borderRadius: 999, fontFamily: 'var(--ff-display)', fontSize: 12, fontWeight: 800, cursor: 'pointer' }
 const helpText = { marginTop: 18, fontSize: 11, color: 'var(--t3)', textAlign: 'center', lineHeight: 1.6 }

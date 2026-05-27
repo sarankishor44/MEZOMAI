@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { getBackendUrls, phpApi, pyApi, pyRootApi } from '../utils/api'
 
 const MOCK_SESSIONS = [12,8,15,22,18,30,25,14,20,28,35,19,24,32,16,22,29,18,25,33,20,15,28,35,22,18,24,30]
 const MOCK_TOKENS  = [3200,1800,4500,6200,3800,8100,5500,2900,5200,7400,9200,4100,6300,8500,3700,5900,7800,4200,6500,8900,5100,3400,7200,9500,5800,4300,6100,8200]
@@ -13,7 +14,32 @@ const HISTORY = [
 
 export default function AnalyticsPage() {
   const [range, setRange] = useState('30d')
+  const [services, setServices] = useState([
+    { id: 'php', label: 'PHP API', status: 'checking', detail: 'Checking /health...' },
+    { id: 'python', label: 'Python AI', status: 'checking', detail: 'Checking FastAPI root...' },
+    { id: 'ai', label: 'AI Routes', status: 'checking', detail: 'Checking /ai/meeting-bot/providers...' },
+  ])
   const ranges = ['7d','30d','90d','all']
+
+  useEffect(() => {
+    checkServices()
+  }, [])
+
+  const checkServices = async () => {
+    const urls = getBackendUrls()
+    const checks = [
+      phpApi.get('/health', { timeout: 5000 })
+        .then(({ data }) => ({ id: 'php', label: 'PHP API', status: 'online', detail: `${data.service || 'PHP'} at ${urls.phpUrl}` }))
+        .catch((error) => ({ id: 'php', label: 'PHP API', status: 'offline', detail: apiStatusError(error, urls.phpUrl) })),
+      pyRootApi.get('/', { timeout: 5000 })
+        .then(({ data }) => ({ id: 'python', label: 'Python AI', status: 'online', detail: `${data.service || 'FastAPI'} at ${urls.pythonUrl}` }))
+        .catch((error) => ({ id: 'python', label: 'Python AI', status: 'offline', detail: apiStatusError(error, urls.pythonUrl) })),
+      pyApi.get('/meeting-bot/providers', { timeout: 5000 })
+        .then(({ data }) => ({ id: 'ai', label: 'Meeting Bot API', status: data.bot_api_configured ? 'online' : 'warning', detail: data.bot_api_configured ? 'Meeting bot API URL configured' : 'Python is online; MEETING_BOT_API_URL is missing' }))
+        .catch((error) => ({ id: 'ai', label: 'Meeting Bot API', status: 'offline', detail: apiStatusError(error, urls.pythonRestUrl) })),
+    ]
+    setServices(await Promise.all(checks))
+  }
 
   const sliced = range === '7d' ? MOCK_SESSIONS.slice(-7) : range === '30d' ? MOCK_SESSIONS : MOCK_SESSIONS
   const maxS = Math.max(...sliced)
@@ -24,7 +50,8 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div style={{ padding: '18px 28px', borderBottom: '1px solid var(--b1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <div style={{ fontFamily: 'var(--ff)', fontSize: 18, fontWeight: 800 }}>Analytics</div>
-        <div style={{ display: 'flex', gap: 4 }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <button onClick={checkServices} style={{ background: 'var(--bg2)', border: '1px solid var(--b1)', borderRadius: 7, padding: '5px 12px', fontFamily: 'var(--fm)', fontSize: 11, color: 'var(--t2)', cursor: 'pointer' }}>Check APIs</button>
           {ranges.map(r => (
             <button key={r} onClick={() => setRange(r)} style={{ background: range === r ? 'var(--cyang)' : 'var(--bg2)', border: `1px solid ${range === r ? 'var(--cyan)' : 'var(--b1)'}`, borderRadius: 7, padding: '5px 12px', fontFamily: 'var(--fm)', fontSize: 11, color: range === r ? 'var(--cyan)' : 'var(--t3)', cursor: 'pointer', transition: 'all .2s' }}>{r}</button>
           ))}
@@ -32,6 +59,17 @@ export default function AnalyticsPage() {
       </div>
 
       <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+          {services.map(service => (
+            <div key={service.id} style={{ background: 'var(--bg2)', border: `1px solid ${statusColor(service.status)}`, borderRadius: 12, padding: '16px 18px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', marginBottom: 8 }}>
+                <div style={{ fontSize: 12, color: 'var(--t2)', fontWeight: 800 }}>{service.label}</div>
+                <span style={{ fontFamily: 'var(--fm)', fontSize: 10, color: statusColor(service.status), textTransform: 'uppercase' }}>{service.status}</span>
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--t3)', lineHeight: 1.45 }}>{service.detail}</div>
+            </div>
+          ))}
+        </div>
 
         {/* Top stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
@@ -122,6 +160,18 @@ export default function AnalyticsPage() {
       </div>
     </div>
   )
+}
+
+function apiStatusError(error, baseUrl) {
+  const detail = error.response?.data?.detail || error.response?.data?.error || error.message
+  return `${baseUrl}: ${detail}`
+}
+
+function statusColor(status) {
+  if (status === 'online') return 'var(--green)'
+  if (status === 'warning') return 'var(--amber)'
+  if (status === 'checking') return 'var(--cyan)'
+  return 'var(--red)'
 }
 
 function ChartCard({ title, children }) {

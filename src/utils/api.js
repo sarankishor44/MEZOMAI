@@ -71,8 +71,19 @@ export const pyApi = axios.create({
   baseURL: getPyRestBase(),
 })
 
+export const pyRootApi = axios.create({
+  baseURL: getPyRootBase(),
+})
+
 pyApi.interceptors.request.use((config) => {
   config.baseURL = getPyRestBase()
+  const token = localStorage.getItem('aria_token')
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
+pyRootApi.interceptors.request.use((config) => {
+  config.baseURL = getPyRootBase()
   const token = localStorage.getItem('aria_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config

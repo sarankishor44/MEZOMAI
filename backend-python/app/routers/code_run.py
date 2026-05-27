@@ -3,6 +3,8 @@ from pydantic import BaseModel
 import subprocess
 import tempfile
 import os
+import sys
+import time
 
 router = APIRouter()
 
@@ -21,9 +23,10 @@ async def run_code(req: CodeRunRequest):
         tmp.write(req.code.encode('utf-8'))
         tmp_path = tmp.name
 
+    started = time.perf_counter()
     try:
         if req.language.lower() == "python":
-            cmd = ["python", tmp_path]
+            cmd = [sys.executable, tmp_path]
         else:
             cmd = ["node", tmp_path]
 
@@ -39,20 +42,23 @@ async def run_code(req: CodeRunRequest):
         return {
             "stdout": process.stdout,
             "stderr": process.stderr,
-            "exit_code": process.returncode
+            "exit_code": process.returncode,
+            "duration_ms": round((time.perf_counter() - started) * 1000),
         }
 
     except subprocess.TimeoutExpired:
         return {
             "stdout": "",
             "stderr": "Execution Error: Subprocess timed out after 5.0 seconds.",
-            "exit_code": -1
+            "exit_code": -1,
+            "duration_ms": round((time.perf_counter() - started) * 1000),
         }
     except Exception as e:
         return {
             "stdout": "",
-            "stderr": "System Error executing code.",
-            "exit_code": -1
+            "stderr": f"System Error executing code: {type(e).__name__}",
+            "exit_code": -1,
+            "duration_ms": round((time.perf_counter() - started) * 1000),
         }
     finally:
         if os.path.exists(tmp_path):

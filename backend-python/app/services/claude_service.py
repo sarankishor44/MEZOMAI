@@ -92,6 +92,8 @@ class ClaudeService:
         if not model:
             return defaults.get(provider, defaults["gemini"])
         lower_model = model.lower()
+        if provider == "gemini" and lower_model.startswith("gemini-1.5"):
+            return defaults["gemini"]
         provider_prefixes = {
             "anthropic": ("claude",),
             "openai": ("gpt", "o1", "o3", "o4", "chatgpt"),
@@ -154,7 +156,10 @@ class ClaudeService:
                     "max_tokens": 1500,
                 },
             )
-            response.raise_for_status()
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                raise ValueError(f"AI provider API error {response.status_code}: {response.text[:500]}") from exc
             data = response.json()
             return data["choices"][0]["message"]["content"]
 
@@ -172,6 +177,9 @@ class ClaudeService:
                     "generationConfig": {"maxOutputTokens": 1500},
                 },
             )
-            response.raise_for_status()
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                raise ValueError(f"Gemini API error {response.status_code}: {response.text[:500]}") from exc
             data = response.json()
             return data["candidates"][0]["content"]["parts"][0]["text"]

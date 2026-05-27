@@ -41,6 +41,9 @@ export const providerKey = (settings = {}) => {
 export const providerModel = (settings = {}) => {
   const provider = activeProvider(settings)
   const model = settings.model || ''
+  if (provider === 'gemini' && model.toLowerCase().startsWith('gemini-1.5')) {
+    return PROVIDER_DEFAULT_MODELS.gemini
+  }
   const prefixes = PROVIDER_MODEL_PREFIXES[provider]
   if (!model || !prefixes?.some(prefix => model.toLowerCase().startsWith(prefix))) {
     return PROVIDER_DEFAULT_MODELS[provider] || PROVIDER_DEFAULT_MODELS.gemini

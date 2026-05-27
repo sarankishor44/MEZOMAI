@@ -458,7 +458,8 @@ function NoteCard({ title, children }) {
   return <section style={panel}><SectionTitle title={title} sub="Generated from the captured transcript."/><p style={{ lineHeight: 1.7, color: 'var(--t2)' }}>{children}</p></section>
 }
 function ListCard({ title, items }) {
-  return <section style={panel}><SectionTitle title={title} sub="Review before sharing."/><ul style={{ paddingLeft: 18, lineHeight: 1.7, color: 'var(--t2)' }}>{items.map((item, i) => <li key={i}>{item}</li>)}</ul></section>
+  const safeItems = Array.isArray(items) ? items : []
+  return <section style={panel}><SectionTitle title={title} sub="Review before sharing."/><ul style={{ paddingLeft: 18, lineHeight: 1.7, color: 'var(--t2)' }}>{safeItems.map((item, i) => <li key={i}>{item}</li>)}</ul></section>
 }
 
 const page = { flex: 1, overflowY: 'auto', padding: 28 }

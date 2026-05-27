@@ -7,6 +7,7 @@ import CodePage from './pages/CodePage'
 import MeetingsPage from './pages/MeetingsPage'
 import AnalyticsPage from './pages/AnalyticsPage'
 import SettingsPage from './pages/SettingsPage'
+import SetupPage from './pages/SetupPage'
 import LoginPage from './pages/LoginPage'
 import PikaGuidePage from './pages/PikaGuidePage'
 import AgentSetupPage from './pages/AgentSetupPage'
@@ -33,6 +34,11 @@ export default function App() {
       .catch(() => {})
   }, [token, setUser, updateSettings])
 
+  // If visiting setup without login, show full-screen setup page
+  if (page === 'setup' && !token) {
+    return <SetupPage />
+  }
+
   // Login Gate
   if (!token || isVerifyRoute) {
     return <LoginPage />
@@ -51,6 +57,7 @@ export default function App() {
         {page === 'wallet'     && <WalletPage />}
         {page === 'analytics'  && <AnalyticsPage />}
         {page === 'settings'   && <SettingsPage />}
+        {page === 'setup'      && <SetupPage />}
       </main>
     </div>
   )
