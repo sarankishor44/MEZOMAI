@@ -8,11 +8,11 @@ const stripPythonRoutePrefix = (value) => {
 }
 
 export const getPhpBase = () => {
-  return trimTrailingSlash(localStorage.getItem('aria_php_api_url') || import.meta.env.VITE_PHP_API || '/api')
+  return trimTrailingSlash(localStorage.getItem('aria_php_api_url') || import.meta.env.VITE_PHP_API || 'https://mezomaiadmin.vercel.app')
 }
 
 export const getPyBase = () => {
-  return trimTrailingSlash(localStorage.getItem('aria_py_api_url') || import.meta.env.VITE_PYTHON_API || '/ai')
+  return trimTrailingSlash(localStorage.getItem('aria_py_api_url') || import.meta.env.VITE_PYTHON_API || 'https://mezomai-oao1.vercel.app')
 }
 
 export const getPyRootBase = () => {

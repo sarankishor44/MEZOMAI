@@ -160,7 +160,8 @@ export default function SettingsPage() {
 
         <section style={panel}>
           <SectionTitle title="Backend URLs" sub="Configure your remote API endpoints (e.g. Vercel deployment)."/>
-          <SecretRow label="Python API (Vercel)" value={settings.pythonApiUrl} onChange={v => { updateSettings({ pythonApiUrl: v }); setBackendUrls({ pythonUrl: v }) }} placeholder="https://mezomai-sili.vercel.app" />
+          <SecretRow label="Python API (Vercel)" value={settings.pythonApiUrl} onChange={v => { updateSettings({ pythonApiUrl: v }); setBackendUrls({ pythonUrl: v }) }} placeholder="https://mezomai-oao1.vercel.app" />
+          <SecretRow label="Meeting Bot API" value={settings.meetingBotUrl} onChange={v => { updateSettings({ meetingBotUrl: v }) }} placeholder="https://mezomai-1iyn.vercel.app" />
         </section>
 
         <section style={panel}>
