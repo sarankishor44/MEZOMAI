@@ -81,7 +81,7 @@ class ClaudeService:
         defaults = {
             "anthropic": "claude-3-5-sonnet-20241022",
             "openai": "gpt-4o-mini",
-            "gemini": "gemini-1.5-flash",
+            "gemini": "gemini-2.0-flash",
             "openrouter": "openai/gpt-4o-mini",
             "deepseek": "deepseek-chat",
             "groq": "llama-3.1-8b-instant",
@@ -161,7 +161,7 @@ class ClaudeService:
         key = api_key or os.getenv("GEMINI_API_KEY")
         if not key:
             raise ValueError("Gemini API key is missing.")
-        gemini_model = model or "gemini-1.5-flash"
+        gemini_model = model or "gemini-2.0-flash"
         async with httpx.AsyncClient(timeout=30) as client:
             response = await client.post(
                 f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model}:generateContent?key={key}",

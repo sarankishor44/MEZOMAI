@@ -12,7 +12,7 @@ export const PROVIDER_KEY_FIELDS = {
 export const PROVIDER_DEFAULT_MODELS = {
   anthropic: 'claude-3-5-sonnet-20241022',
   openai: 'gpt-4o-mini',
-  gemini: 'gemini-1.5-flash',
+  gemini: 'gemini-2.0-flash',
   openrouter: 'openai/gpt-4o-mini',
   deepseek: 'deepseek-chat',
   groq: 'llama-3.1-8b-instant',

@@ -127,18 +127,40 @@ export default function SettingsPage() {
           </Row>
           <Row label="Model">
             <select value={settings.model} onChange={e => updateSettings({ model: e.target.value })} style={select}>
-              <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-              <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
-              <option value="gpt-4o">GPT-4o</option>
-              <option value="gpt-4o-mini">GPT-4o Mini</option>
-              <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-              <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-              <option value="openai/gpt-4o-mini">OpenRouter GPT-4o Mini</option>
-              <option value="anthropic/claude-3.5-sonnet">OpenRouter Claude 3.5 Sonnet</option>
-              <option value="deepseek-chat">DeepSeek Chat</option>
-              <option value="llama-3.1-8b-instant">Groq Llama 3.1 8B</option>
-              <option value="mistral-small-latest">Mistral Small</option>
-              <option value="grok-2-latest">xAI Grok 2</option>
+              <optgroup label="── Gemini (Google) ──">
+                <option value="gemini-2.0-flash">Gemini 2.0 Flash ⚡ (Recommended)</option>
+                <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
+                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash Latest</option>
+              </optgroup>
+              <optgroup label="── Anthropic (Claude) ──">
+                <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+              </optgroup>
+              <optgroup label="── OpenAI ──">
+                <option value="gpt-4o">GPT-4o</option>
+                <option value="gpt-4o-mini">GPT-4o Mini</option>
+              </optgroup>
+              <optgroup label="── DeepSeek ──">
+                <option value="deepseek-chat">DeepSeek Chat</option>
+                <option value="deepseek-reasoner">DeepSeek Reasoner</option>
+              </optgroup>
+              <optgroup label="── Groq (Fast) ──">
+                <option value="llama-3.1-8b-instant">Llama 3.1 8B Instant</option>
+                <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
+              </optgroup>
+              <optgroup label="── Mistral ──">
+                <option value="mistral-small-latest">Mistral Small</option>
+                <option value="mistral-large-latest">Mistral Large</option>
+              </optgroup>
+              <optgroup label="── xAI ──">
+                <option value="grok-2-latest">xAI Grok 2</option>
+              </optgroup>
+              <optgroup label="── OpenRouter ──">
+                <option value="openai/gpt-4o-mini">OpenRouter GPT-4o Mini</option>
+                <option value="anthropic/claude-3.5-sonnet">OpenRouter Claude 3.5 Sonnet</option>
+                <option value="google/gemini-2.0-flash-exp">OpenRouter Gemini 2.0 Flash</option>
+              </optgroup>
             </select>
           </Row>
           <Row label="Voice">
