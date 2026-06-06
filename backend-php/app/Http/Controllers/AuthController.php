@@ -82,7 +82,7 @@ class AuthController extends Controller
             'voice_name' => $user->voice_name,
             'voice_speed' => $user->voice_speed,
             'voice_pitch' => $user->voice_pitch,
-            'active_provider' => $user->active_provider ?? 'anthropic'
+            'active_provider' => $user->active_provider ?? 'gemma'
         ];
     }
 
@@ -109,7 +109,8 @@ class AuthController extends Controller
             'avatar_name' => 'ARIA',
             'avatar_style' => 'cyan',
             'personality' => 'friendly',
-            'model' => 'claude-sonnet-4-20250514',
+            'model' => 'gemma-3-27b-it',
+            'active_provider' => 'gemma',
             'created_at' => now(),
             'updated_at' => now()
         ]);

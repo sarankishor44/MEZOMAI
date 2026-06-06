@@ -114,7 +114,8 @@ export default function SettingsPage() {
         <section style={panel}>
           <SectionTitle title="Model and Voice" sub="Select active provider, model and browser TTS voice."/>
           <Row label="Active Provider">
-            <select value={settings.activeProvider || 'anthropic'} onChange={e => updateSettings({ activeProvider: e.target.value })} style={select}>
+            <select value={settings.activeProvider || 'gemma'} onChange={e => updateSettings({ activeProvider: e.target.value })} style={select}>
+              <option value="gemma">Google Gemma</option>
               <option value="anthropic">Anthropic</option>
               <option value="openai">OpenAI</option>
               <option value="gemini">Gemini</option>
@@ -127,6 +128,11 @@ export default function SettingsPage() {
           </Row>
           <Row label="Model">
             <select value={settings.model} onChange={e => updateSettings({ model: e.target.value })} style={select}>
+              <optgroup label="Google Gemma default">
+                <option value="gemma-3-27b-it">Gemma 3 27B IT default</option>
+                <option value="gemma-3-12b-it">Gemma 3 12B IT</option>
+                <option value="gemma-3-4b-it">Gemma 3 4B IT</option>
+              </optgroup>
               <optgroup label="── Gemini (Google) ── 🆕">
                 <option value="gemini-2.5-flash">Gemini 2.5 Flash ⚡ (Recommended)</option>
                 <option value="gemini-3.5-flash">Gemini 3.5 Flash 🆕</option>
@@ -186,10 +192,10 @@ export default function SettingsPage() {
 
 
         <section style={panel}>
-          <SectionTitle title="API Keys" sub="Provide keys for the AI providers you want to use. Keys are stored locally."/>
+          <SectionTitle title="API Keys" sub="Gemma uses the platform key with a daily limit. Add your own provider key to remove the platform limit."/>
           <SecretRow label="Anthropic Key" value={settings.apiKey} onChange={v => updateSettings({ apiKey: v })} placeholder="sk-ant-..." />
           <SecretRow label="OpenAI Key" value={settings.openAiKey} onChange={v => updateSettings({ openAiKey: v })} placeholder="sk-..." />
-          <SecretRow label="Gemini Key" value={settings.geminiKey} onChange={v => updateSettings({ geminiKey: v })} placeholder="AIza..." />
+          <SecretRow label="Gemini / Gemma Key" value={settings.geminiKey} onChange={v => updateSettings({ geminiKey: v })} placeholder="AIza..." />
           <SecretRow label="OpenRouter Key" value={settings.openRouterKey} onChange={v => updateSettings({ openRouterKey: v })} placeholder="sk-or-..." />
           <SecretRow label="DeepSeek Key" value={settings.deepSeekKey} onChange={v => updateSettings({ deepSeekKey: v })} placeholder="sk-..." />
           <SecretRow label="Groq Key" value={settings.groqKey} onChange={v => updateSettings({ groqKey: v })} placeholder="gsk_..." />

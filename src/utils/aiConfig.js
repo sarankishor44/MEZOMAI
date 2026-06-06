@@ -1,4 +1,5 @@
 export const PROVIDER_KEY_FIELDS = {
+  gemma: 'geminiKey',
   anthropic: 'apiKey',
   openai: 'openAiKey',
   gemini: 'geminiKey',
@@ -10,6 +11,7 @@ export const PROVIDER_KEY_FIELDS = {
 }
 
 export const PROVIDER_DEFAULT_MODELS = {
+  gemma: 'gemma-3-27b-it',
   anthropic: 'claude-sonnet-4-6',
   openai: 'gpt-4o-mini',
   gemini: 'gemini-2.5-flash',
@@ -20,7 +22,18 @@ export const PROVIDER_DEFAULT_MODELS = {
   xai: 'grok-4.3',
 }
 
+// ── Platform default: Google Gemma (free, no key required) ──────────────────
+export const PLATFORM_DEFAULT_AI = {
+  provider: 'gemma',
+  model: 'gemma-3-27b-it',
+  label: 'Google Gemma 3 27B',
+  description: 'Free platform AI — no API key required',
+  dailyRequestLimit: 25,
+  windowHours: 24,
+}
+
 const PROVIDER_MODEL_PREFIXES = {
+  gemma: ['gemma'],
   anthropic: ['claude'],
   openai: ['gpt', 'o1', 'o3', 'o4', 'chatgpt'],
   gemini: ['gemini'],
@@ -31,15 +44,13 @@ const PROVIDER_MODEL_PREFIXES = {
   xai: ['grok'],
 }
 
-export const activeProvider = (settings = {}) => (settings.activeProvider || 'gemini').toLowerCase()
+export const activeProvider = (settings = {}) => (settings.activeProvider || 'gemma').toLowerCase()
 
-export const providerKey = (settings = {}) => {
-  const provider = activeProvider(settings)
+export const providerKey = (settings = {}, provider = activeProvider(settings)) => {
   return (settings[PROVIDER_KEY_FIELDS[provider]] || '').trim()
 }
 
-export const providerModel = (settings = {}) => {
-  const provider = activeProvider(settings)
+export const providerModel = (settings = {}, provider = activeProvider(settings)) => {
   const model = settings.model || ''
   if (provider === 'gemini' && model.toLowerCase().startsWith('gemini-1.5')) {
     return PROVIDER_DEFAULT_MODELS.gemini
@@ -53,18 +64,33 @@ export const providerModel = (settings = {}) => {
 
 export const hasProviderKey = (settings = {}) => Boolean(providerKey(settings))
 
-export const aiRequestConfig = (settings = {}) => ({
-  model: providerModel(settings),
-  provider: activeProvider(settings),
-  api_key: settings.apiKey || undefined,
-  openai_key: settings.openAiKey || undefined,
-  gemini_key: settings.geminiKey || undefined,
-  openrouter_key: settings.openRouterKey || undefined,
-  deepseek_key: settings.deepSeekKey || undefined,
-  groq_key: settings.groqKey || undefined,
-  mistral_key: settings.mistralKey || undefined,
-  xai_key: settings.xAiKey || undefined,
-})
+export const isUsingDefaultGemma = (settings = {}) => !hasProviderKey(settings)
+
+export const aiRequestConfig = (settings = {}) => {
+  const usingOwnKey = hasProviderKey(settings)
+  const config = {
+    model: usingOwnKey ? providerModel(settings) : PLATFORM_DEFAULT_AI.model,
+    provider: usingOwnKey ? activeProvider(settings) : PLATFORM_DEFAULT_AI.provider,
+  }
+  if (!usingOwnKey) return config
+  return {
+    ...config,
+    api_key: activeProvider(settings) === 'anthropic' ? settings.apiKey || undefined : undefined,
+    openai_key: activeProvider(settings) === 'openai' ? settings.openAiKey || undefined : undefined,
+    gemini_key: ['gemini', 'gemma'].includes(activeProvider(settings)) ? settings.geminiKey || undefined : undefined,
+    openrouter_key: activeProvider(settings) === 'openrouter' ? settings.openRouterKey || undefined : undefined,
+    deepseek_key: activeProvider(settings) === 'deepseek' ? settings.deepSeekKey || undefined : undefined,
+    groq_key: activeProvider(settings) === 'groq' ? settings.groqKey || undefined : undefined,
+    mistral_key: activeProvider(settings) === 'mistral' ? settings.mistralKey || undefined : undefined,
+    xai_key: activeProvider(settings) === 'xai' ? settings.xAiKey || undefined : undefined,
+  }
+}
+
+export const aiModeLabel = (settings = {}) => (
+  hasProviderKey(settings)
+    ? `${activeProvider(settings)} / ${providerModel(settings)}`
+    : `${PLATFORM_DEFAULT_AI.label} (platform default)`
+)
 
 export const aiErrorMessage = (error) => {
   const data = error?.response?.data

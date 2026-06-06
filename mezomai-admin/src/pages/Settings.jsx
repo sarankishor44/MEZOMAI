@@ -11,6 +11,7 @@ const fields = [
   ['dbDatabase', 'Database Name', 'mezomai', Database],
   ['dbUsername', 'Database Username', 'root', KeyRound],
   ['dbPassword', 'Database Password', 'secret', KeyRound],
+  ['googleAiKey', 'Google AI key for Gemma', 'AIza...', KeyRound],
 ];
 
 export default function Settings() {

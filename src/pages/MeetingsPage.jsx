@@ -313,7 +313,7 @@ export default function MeetingsPage() {
             <div style={settingsGrid}>
               <Info label="Agent" value={`${settings.avatarName} (${settings.avatarGender || 'female'})`}/>
               <Info label="Voice" value={settings.voiceName || 'Browser default'}/>
-              <Info label="Provider" value={settings.activeProvider || 'anthropic'}/>
+              <Info label="Provider" value={settings.activeProvider || 'gemma'}/>
               <Info label="Mode" value={settings.personality || 'friendly'}/>
             </div>
             {mediaError && <div style={warning}>{mediaError}</div>}

@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import AvatarFace from '../components/layout/AvatarFace'
 import { phpApi, pyApi } from '../utils/api'
-import { activeProvider, aiErrorMessage, aiRequestConfig, hasProviderKey, providerModel } from '../utils/aiConfig'
+import { aiErrorMessage, aiRequestConfig, hasProviderKey, isUsingDefaultGemma, providerModel, PLATFORM_DEFAULT_AI } from '../utils/aiConfig'
 import { callAIDirectly, isNetworkError } from '../utils/directAI'
+import GemmaQuotaBadge, { consumeQuota } from '../components/chat/GemmaQuotaBadge'
 
 
 const MODES = ['Friendly', 'Developer', 'Coach', 'Professional']
@@ -34,6 +35,7 @@ export default function ChatPage() {
   const [memoryOn, setMemoryOn] = useState(true)
   const [voiceOn, setVoiceOn] = useState(false)
   const [syncState, setSyncState] = useState('Local ready')
+  const [lastUsedDefault, setLastUsedDefault] = useState(false)
   const bottomRef = useRef(null)
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, loading])
@@ -106,11 +108,11 @@ export default function ChatPage() {
 
   const generateReply = async (history, userText) => {
     const systemPrompt = settings.systemPrompt || `You are ${settings.avatarName}, a ${selectedMode.toLowerCase()} AI assistant.`
-    const provider = activeProvider(settings)
-    if (!hasProviderKey(settings)) {
-      setSyncState(`Add ${provider} API key in Settings`)
-      return `I need a ${provider} API key before I can generate live AI text. Open Settings, choose ${provider}, paste the key, save it, then send this again.`
-    }
+    const requestConfig = aiRequestConfig(settings)
+    const provider = requestConfig.provider
+    const model = requestConfig.model
+    const ownsKey = hasProviderKey(settings)
+    const usingDefault = isUsingDefaultGemma(settings)
     const prompt = memoryOn
       ? history.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n')
       : userText
@@ -120,13 +122,26 @@ export default function ChatPage() {
       const { data } = await pyApi.post('/completion', {
         system_prompt: systemPrompt,
         prompt,
-        ...aiRequestConfig(settings),
+        ...requestConfig,
       })
-      setSyncState('✓ AI via Python backend')
+
+      // Track client-side quota when using platform default Gemma
+      if (data.using_default_ai || usingDefault) {
+        consumeQuota()
+        setLastUsedDefault(prev => !prev) // toggle to trigger badge refresh
+      }
+
+      const remainingRequests = Number.isFinite(data.default_ai_remaining_requests)
+        ? ` (${data.default_ai_remaining_requests} free uses left)`
+        : ''
+      const remainingTime = !remainingRequests && data.default_ai_remaining_seconds
+        ? ` (${Math.ceil(data.default_ai_remaining_seconds / 60)} min left)`
+        : ''
+      setSyncState(`${data.using_default_ai ? '✦ Gemma Free' : 'AI via Python'}${remainingRequests || remainingTime}`)
       return data.response
     } catch (backendError) {
       // 2️⃣ If backend is unreachable (CORS / Network Error), call AI provider directly from browser
-      if (isNetworkError(backendError)) {
+      if (isNetworkError(backendError) && ownsKey) {
         setSyncState(`Backend unreachable — calling ${provider} directly…`)
         try {
           const reply = await callAIDirectly(systemPrompt, prompt, settings)
@@ -141,6 +156,12 @@ export default function ChatPage() {
       // 3️⃣ Backend responded but returned an error (bad key, quota, etc.)
       const detail = aiErrorMessage(backendError)
       setSyncState('AI request failed')
+
+      // Friendly message for quota exhaustion
+      if (backendError?.response?.status === 429) {
+        return `⏳ **Platform Gemma limit reached.**\n\nYou've used all ${PLATFORM_DEFAULT_AI.dailyRequestLimit} free Gemma requests for this ${PLATFORM_DEFAULT_AI.windowHours}-hour window.\n\nYou can:\n• Wait for the limit to reset (see the countdown in the sidebar)\n• Add your own Gemini/Gemma API key in **Settings → API Keys** for unlimited personal use`
+      }
+
       return `The AI request did not complete.\n\nProvider: ${provider}\nModel: ${providerModel(settings)}\nError: ${detail}\n\nCheck that your Python backend is deployed/running and that the ${provider} API key in Settings is valid.`
     }
   }
@@ -202,6 +223,8 @@ export default function ChatPage() {
     }
   }
 
+  const usingDefaultGemma = isUsingDefaultGemma(settings)
+
   return (
     <div style={page} className="fade-in">
       <aside style={sessionsPane}>
@@ -220,7 +243,11 @@ export default function ChatPage() {
       <section style={chatShell}>
         <header style={header}>
           <div>
-            <div style={eyebrow}>Backend-backed chat</div>
+            <div style={eyebrow}>
+              {usingDefaultGemma
+                ? `✦ Google Gemma Free · ${PLATFORM_DEFAULT_AI.model}`
+                : 'Backend-backed chat'}
+            </div>
             <h1 style={title}>Chat with {settings.avatarName}</h1>
           </div>
           <span style={badge}>{syncState}</span>
@@ -235,7 +262,11 @@ export default function ChatPage() {
             <div style={emptyState}>
               <div style={emptyOrb}>AI</div>
               <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 22 }}>What should we work on?</h2>
-              <p style={{ color: 'var(--t3)', maxWidth: 520, lineHeight: 1.6 }}>Messages save through PHP, and replies are generated through your selected provider API key from Settings.</p>
+              <p style={{ color: 'var(--t3)', maxWidth: 520, lineHeight: 1.6 }}>
+                {usingDefaultGemma
+                  ? `Running on free Google Gemma (${PLATFORM_DEFAULT_AI.dailyRequestLimit} requests / ${PLATFORM_DEFAULT_AI.windowHours}h). Add an API key in Settings for unlimited use.`
+                  : 'Messages save through PHP, and replies are generated through your selected provider API key from Settings.'}
+              </p>
             </div>
           )}
           {messages.map(msg => <MessageBubble key={msg.id} msg={msg} avatarName={settings.avatarName}/>)}
@@ -257,6 +288,10 @@ export default function ChatPage() {
           <div style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 800 }}>{settings.avatarName}</div>
           <div style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--t3)', textTransform: 'uppercase', marginTop: 4 }}>{avatarState}</div>
         </div>
+
+        {/* Gemma free-tier quota widget — only shown when no personal key is set */}
+        {usingDefaultGemma && <GemmaQuotaBadge lastUsedDefault={lastUsedDefault} />}
+
         <div style={controlBlock}>
           <div style={sectionLabel}>Mode</div>
           <div style={modeGrid}>

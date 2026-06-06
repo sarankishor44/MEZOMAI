@@ -27,7 +27,7 @@ class SettingsController extends Controller
                 'voiceSpeed' => (float) $user->voice_speed,
                 'voicePitch' => (float) $user->voice_pitch,
                 'model' => $user->model,
-                'activeProvider' => $user->active_provider ?? 'anthropic',
+                'activeProvider' => $user->active_provider ?? 'gemma',
                 'keyHints' => $keys,
             ],
         ]);
@@ -130,7 +130,7 @@ class SettingsController extends Controller
                 'avatar_gender' => $updatedUser->avatar_gender ?? 'female',
                 'personality' => $updatedUser->personality,
                 'model' => $updatedUser->model,
-                'active_provider' => $updatedUser->active_provider ?? 'anthropic',
+                'active_provider' => $updatedUser->active_provider ?? 'gemma',
                 'system_prompt' => $updatedUser->system_prompt,
                 'voice_name' => $updatedUser->voice_name,
                 'voice_speed' => $updatedUser->voice_speed,

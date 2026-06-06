@@ -17,6 +17,8 @@ class JoinBotRequest(BaseModel):
     bot_name: str = "MEZOMAI AI"
     entry_message: str = "MEZOMAI AI joined to capture notes and action items."
     avatar: AvatarProfile = Field(default_factory=AvatarProfile)
+    auto_transcribe: bool = True
+    keep_alive_seconds: int = Field(default=5400, ge=60, le=21600)
 
 
 class BotSession(BaseModel):
@@ -29,3 +31,5 @@ class BotSession(BaseModel):
     created_at: datetime
     updated_at: datetime
     screenshot_path: Optional[str] = None
+    last_url: Optional[str] = None
+    events: list[str] = Field(default_factory=list)

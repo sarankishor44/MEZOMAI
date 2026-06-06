@@ -69,11 +69,11 @@ function userToSettings(user = {}) {
     avatarStyle: user.avatar_style || user.avatarStyle || 'gold',
     avatarGender: user.avatar_gender || user.avatarGender || 'female',
     personality: user.personality || 'friendly',
-    model: user.model || 'claude-3-5-sonnet-20241022',
+    model: user.model || 'gemma-3-27b-it',
     systemPrompt: user.system_prompt || user.systemPrompt || undefined,
     voiceName: user.voice_name || user.voiceName || 'Rachel',
     voiceSpeed: Number(user.voice_speed || user.voiceSpeed || 1),
     voicePitch: Number(user.voice_pitch || user.voicePitch || 1),
-    activeProvider: user.active_provider || user.activeProvider || 'anthropic',
+    activeProvider: user.active_provider || user.activeProvider || 'gemma',
   }
 }

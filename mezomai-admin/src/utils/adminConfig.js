@@ -8,6 +8,7 @@ export const defaultAdminConfig = {
   dbDatabase: 'mezomai',
   dbUsername: 'root',
   dbPassword: '',
+  googleAiKey: '',
 };
 
 export function loadAdminConfig() {
@@ -40,6 +41,15 @@ export function exportEnv(config) {
     'APP_DEBUG=false',
     'JWT_SECRET=replace-with-long-random-secret',
     `PYTHON_BACKEND_URL=${next.pythonApiUrl}`,
+    '',
+    '# Python default AI: Google Gemma via Gemini API',
+    'DEFAULT_AI_PROVIDER=gemma',
+    'DEFAULT_AI_MODEL=gemma-3-27b-it',
+    'DEFAULT_AI_DAILY_REQUESTS=25',
+    'DEFAULT_AI_WINDOW_HOURS=24',
+    'DEFAULT_AI_BUDGET_MINUTES=30',
+    `DEFAULT_GEMMA_API_KEY=${next.googleAiKey || 'replace-with-google-ai-key'}`,
+    `GEMINI_API_KEY=${next.googleAiKey || 'replace-with-google-ai-key'}`,
     '',
     '# Cloud Database Configuration',
     `DB_HOST=${next.dbHost}`,

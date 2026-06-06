@@ -69,6 +69,9 @@ export const callAIDirectly = async (systemPrompt, prompt, settings) => {
   }
 
   switch (provider) {
+    case 'gemma':
+      return callGemini(systemPrompt, prompt, model, apiKey)
+
     case 'gemini':
       return callGemini(systemPrompt, prompt, model, apiKey)
 

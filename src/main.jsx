@@ -30,6 +30,7 @@ import { Sentry } from './utils/sentry'
       'gemini-1.5-pro': 'gemini-2.5-flash',
       'gemini-2.0-flash': 'gemini-2.5-flash',
       'gemini-2.0-flash-lite': 'gemini-2.5-flash',
+      'gemma2-9b-it': 'gemma-3-27b-it',
       'grok-2-latest': 'grok-4.3',
       'grok-3-latest': 'grok-4.3',
       'deepseek-chat': 'deepseek-v4-flash',
@@ -43,10 +44,21 @@ import { Sentry } from './utils/sentry'
       changed = true
     }
 
-    // If provider is anthropic but no Anthropic key set, switch to gemini
-    if (s.activeProvider === 'anthropic' && !s.apiKey) {
-      s.activeProvider = 'gemini'
-      if (!s.model || s.model.startsWith('claude')) s.model = 'gemini-2.5-flash'
+    // If there is no personal key for the chosen provider, use platform Gemma by default.
+    const keyByProvider = {
+      anthropic: s.apiKey,
+      openai: s.openAiKey,
+      gemini: s.geminiKey,
+      gemma: s.geminiKey,
+      openrouter: s.openRouterKey,
+      deepseek: s.deepSeekKey,
+      groq: s.groqKey,
+      mistral: s.mistralKey,
+      xai: s.xAiKey,
+    }
+    if (!keyByProvider[s.activeProvider || 'gemma']) {
+      s.activeProvider = 'gemma'
+      s.model = 'gemma-3-27b-it'
       changed = true
     }
 
