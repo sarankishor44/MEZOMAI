@@ -1,6 +1,7 @@
 import os
 import httpx
 from anthropic import AsyncAnthropic
+from typing import AsyncGenerator
 
 
 class ClaudeService:
@@ -13,13 +14,43 @@ class ClaudeService:
             raise ValueError("Anthropic API key is missing.")
         return AsyncAnthropic(api_key=key)
 
+    # ── STREAMING — used by chat_ws.py ──────────────────────────────────
+    async def generate_stream(
+        self,
+        system_prompt: str,
+        messages: list[dict],
+        model: str = None,
+        api_key: str = None,
+    ) -> AsyncGenerator[str, None]:
+        """
+        Async generator that yields text tokens one by one.
+        messages format: [{"role": "user"|"assistant", "content": "..."}]
+        """
+        client = self._anthropic_client(api_key or self.api_key)
+        resolved_model = model or "claude-sonnet-4-6"
+        # Remap legacy model names that no longer exist
+        legacy_map = {
+            "claude-3-5-sonnet-20241022": "claude-sonnet-4-6",
+            "claude-3-opus-20240229": "claude-opus-4-6",
+            "claude-3-haiku-20240307": "claude-haiku-4-5-20251001",
+        }
+        resolved_model = legacy_map.get(resolved_model, resolved_model)
+        async with client.messages.stream(
+            model=resolved_model,
+            max_tokens=1024,
+            system=system_prompt,
+            messages=messages,
+        ) as stream:
+            async for text in stream.text_stream:
+                yield text
+
     async def generate_completion(
         self,
         system_prompt: str,
         prompt: str,
         model: str = None,
         api_key: str = None,
-        provider: str = "gemini",
+        provider: str = "gemma",
         openai_key: str = None,
         gemini_key: str = None,
         openrouter_key: str = None,
@@ -28,7 +59,9 @@ class ClaudeService:
         mistral_key: str = None,
         xai_key: str = None,
     ) -> str:
-        provider = (provider or "gemini").lower()
+        provider = (provider or "gemma").lower()
+        if provider == "gemma":
+            return await self._gemini_completion(system_prompt, prompt, self._model_for_provider(provider, model), gemini_key)
         if provider == "openai":
             return await self._openai_completion(system_prompt, prompt, self._model_for_provider(provider, model), openai_key)
         if provider == "gemini":
@@ -78,8 +111,9 @@ class ClaudeService:
         return await self._anthropic_completion(system_prompt, prompt, self._model_for_provider("anthropic", model), api_key)
 
     def _model_for_provider(self, provider: str, model: str = None) -> str:
-        provider = (provider or "gemini").lower()
+        provider = (provider or "gemma").lower()
         defaults = {
+            "gemma": "gemma-3-27b-it",
             "anthropic": "claude-sonnet-4-6",
             "openai": "gpt-4o-mini",
             "gemini": "gemini-2.5-flash",
@@ -97,6 +131,7 @@ class ClaudeService:
         provider_prefixes = {
             "anthropic": ("claude",),
             "openai": ("gpt", "o1", "o3", "o4", "chatgpt"),
+            "gemma": ("gemma",),
             "gemini": ("gemini",),
             "openrouter": ("openai/", "anthropic/", "google/", "meta-llama/", "mistralai/", "deepseek/", "x-ai/", "qwen/"),
             "deepseek": ("deepseek",),

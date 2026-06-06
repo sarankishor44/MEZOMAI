@@ -32,10 +32,16 @@ async def chat_websocket(websocket: WebSocket):
                         "type": "token",
                         "token": token
                     }))
-                
+
                 # Signal completion
                 await websocket.send_text(json.dumps({"type": "done"}))
-                
+
+            except ValueError as e:
+                # Missing API key or bad config — tell client clearly
+                await websocket.send_text(json.dumps({
+                    "type": "error",
+                    "message": str(e)
+                }))
             except Exception as e:
                 await websocket.send_text(json.dumps({
                     "type": "error",
